@@ -1,0 +1,23 @@
+{
+ "values": [
+  {
+   "auction": "main auction, delivery 2029",
+   "source": "Dz.U. 2024 poz. 1154",
+   "wind": 13.79,
+   "pv": 2.8
+  },
+  {
+   "auction": "main auction, delivery 2030",
+   "source": "Dz.U. 2025 poz. 1066",
+   "wind": 12.52,
+   "pv": 2.41
+  },
+  {
+   "auction": "additional auctions, delivery 2028",
+   "source": "Dz.U. 2026 poz. 1359",
+   "wind": 12.62,
+   "pv": 1.56
+  }
+ ],
+ "note": "Korekcyjne wsp\u00f3\u0142czynniki dyspozycyjno\u015bci (capacity market derating factors) set yearly by regulation of the minister for energy; verify the current regulation before use."
+}

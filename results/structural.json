@@ -1,0 +1,174 @@
+{
+ "kelmarsh": {
+  "source": "Kelmarsh wind farm status logs 2016-04-15..2021-12-31, 6 x Senvion MM92",
+  "all_forced": {
+   "events": 332,
+   "downtime_h": 1336.3125000000002,
+   "exposure_unit_h": 300528.0,
+   "for": 0.004446549073630411,
+   "mttr_h": 4.02503765060241,
+   "mttf_h": 901.179781626506,
+   "failures_per_unit_year": 9.6773678326146,
+   "n_units": 6
+  },
+  "forced_ge_1h": {
+   "events": 98,
+   "downtime_h": 1267.670277777778,
+   "exposure_unit_h": 300528.0,
+   "for": 0.004218143659751431,
+   "mttr_h": 12.93541099773243,
+   "mttf_h": 3053.676833900227,
+   "failures_per_unit_year": 2.8565724325187674,
+   "n_units": 6
+  },
+  "other_categories": {
+   "Out of Electrical Specification": {
+    "events": 234,
+    "downtime_h": 2226.2683333333334,
+    "share_of_time": 0.0074078566167988785
+   },
+   "Out of Environmental Specification": {
+    "events": 68,
+    "downtime_h": 839.3386111111113,
+    "share_of_time": 0.0027928799017433027
+   },
+   "Requested Shutdown": {
+    "events": 72,
+    "downtime_h": 1194.2016666666668,
+    "share_of_time": 0.003973678547977782
+   },
+   "Scheduled Maintenance": {
+    "events": 402,
+    "downtime_h": 2065.7591666666667,
+    "share_of_time": 0.006873766060622194
+   },
+   "Technical Standby": {
+    "events": 2511,
+    "downtime_h": 525.9147222222223,
+    "share_of_time": 0.0017499691284080761
+   }
+  },
+  "yearly": [
+   {
+    "year": 2016,
+    "events": 47,
+    "downtime_h": 150.66138888888887,
+    "exposure_unit_h": 37584.0,
+    "for": 0.004008657643914668,
+    "mttr_h": 3.20556146572104,
+    "mttf_h": 796.454013002364,
+    "failures_per_unit_year": 10.954661558109834,
+    "n_units": 6
+   },
+   {
+    "year": 2017,
+    "events": 58,
+    "downtime_h": 192.4477777777778,
+    "exposure_unit_h": 52560.0,
+    "for": 0.003661487400642652,
+    "mttr_h": 3.318065134099617,
+    "mttf_h": 902.8888314176245,
+    "failures_per_unit_year": 9.666666666666666,
+    "n_units": 6
+   },
+   {
+    "year": 2018,
+    "events": 68,
+    "downtime_h": 90.22777777777776,
+    "exposure_unit_h": 52560.0,
+    "for": 0.0017166624386944019,
+    "mttr_h": 1.32687908496732,
+    "mttf_h": 771.614297385621,
+    "failures_per_unit_year": 11.333333333333334,
+    "n_units": 6
+   },
+   {
+    "year": 2019,
+    "events": 52,
+    "downtime_h": 126.07333333333334,
+    "exposure_unit_h": 52560.0,
+    "for": 0.0023986555048198886,
+    "mttr_h": 2.4244871794871794,
+    "mttf_h": 1008.3447435897435,
+    "failures_per_unit_year": 8.666666666666666,
+    "n_units": 6
+   },
+   {
+    "year": 2020,
+    "events": 64,
+    "downtime_h": 248.08888888888887,
+    "exposure_unit_h": 52704.0,
+    "for": 0.0047072117654995615,
+    "mttr_h": 3.8763888888888887,
+    "mttf_h": 819.6236111111111,
+    "failures_per_unit_year": 10.63752276867031,
+    "n_units": 6
+   },
+   {
+    "year": 2021,
+    "events": 43,
+    "downtime_h": 528.8133333333333,
+    "exposure_unit_h": 52560.0,
+    "for": 0.010061136478944696,
+    "mttr_h": 12.29798449612403,
+    "mttf_h": 1210.0275968992248,
+    "failures_per_unit_year": 7.166666666666667,
+    "n_units": 6
+   }
+  ]
+ },
+ "pvdaq": {
+  "source": "NREL PVDAQ system 34, 2016-2017, single inverter; daylight time with POA > 200 W/m2",
+  "all": {
+   "events": 11,
+   "downtime_h": 391.0,
+   "exposure_unit_h": 6781.0,
+   "for": 0.05766111193039375,
+   "mttr_h": 35.54545454545455,
+   "mttf_h": 580.9090909090909,
+   "failures_per_unit_year": 14.210293467040259,
+   "n_units": 1
+  },
+  "ge_1h": {
+   "events": 1,
+   "downtime_h": 388.5,
+   "exposure_unit_h": 6781.0,
+   "for": 0.05729243474413803,
+   "mttr_h": 388.5,
+   "mttf_h": 6392.5,
+   "failures_per_unit_year": 1.2918448606400237,
+   "n_units": 1
+  },
+  "events_ge_1h": [
+   {
+    "start": "2016-06-04 06:00:00",
+    "end": "2016-07-08 10:45:00",
+    "daylight_h": 388.5
+   }
+  ]
+ },
+ "parameters": {
+  "literature": {
+   "wind": {
+    "for": 0.05,
+    "mttr_h": 80.0
+   },
+   "pv": {
+    "for": 0.03,
+    "mttr_h": 24.0
+   }
+  },
+  "data": {
+   "wind": {
+    "for": 0.004218143659751431,
+    "mttr_h": 12.93541099773243,
+    "source": "Kelmarsh wind farm status logs 2016-04-15..2021-12-31, 6 x Senvion MM92"
+   },
+   "pv": {
+    "for": 0.05729243474413803,
+    "mttr_h": 388.5,
+    "source": "NREL PVDAQ system 34, 2016-2017, single inverter; daylight time with POA > 200 W/m2"
+   }
+  }
+ }
+}

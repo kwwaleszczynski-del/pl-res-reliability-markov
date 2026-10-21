@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
+
+# raw and cached inputs (public data, re-downloadable; never committed)
+/data/
+*.log

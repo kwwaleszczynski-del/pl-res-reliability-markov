@@ -1,0 +1,1009 @@
+{
+ "variants": {
+  "RTS:BAU": {
+   "lole": 9.217,
+   "lole_ci95": 0.446,
+   "lole_analytic": 9.394,
+   "eens": 1153.3,
+   "lolf": 1.869,
+   "lold_h": 4.93,
+   "elcc_mc_pct": NaN,
+   "elcc_analytic_pct": NaN
+  },
+  "RTS:LIT": {
+   "lole": 3.909,
+   "lole_ci95": 0.268,
+   "lole_analytic": 3.934,
+   "eens": 459.8,
+   "lolf": 0.922,
+   "lold_h": 4.24,
+   "elcc_mc_pct": 20.03,
+   "elcc_analytic_pct": 20.24
+  },
+  "RTS:DATA": {
+   "lole": 3.816,
+   "lole_ci95": 0.264,
+   "lole_analytic": 3.841,
+   "eens": 448.7,
+   "lolf": 0.903,
+   "lold_h": 4.23,
+   "elcc_mc_pct": 20.54,
+   "elcc_analytic_pct": 20.75
+  },
+  "RTS:NOFOR": {
+   "lole": 3.761,
+   "lole_ci95": 0.262,
+   "lole_analytic": 3.791,
+   "eens": 442.9,
+   "lolf": 0.894,
+   "lold_h": 4.21,
+   "elcc_mc_pct": 20.83,
+   "elcc_analytic_pct": 21.1
+  },
+  "RTS:THESIS": {
+   "lole": 4.479,
+   "lole_ci95": 0.286,
+   "lole_analytic": 4.488,
+   "eens": 539.4,
+   "lolf": 1.056,
+   "lold_h": 4.24,
+   "elcc_mc_pct": 17.08,
+   "elcc_analytic_pct": 17.44
+  },
+  "RTS:HOM": {
+   "lole": 4.257,
+   "lole_ci95": 0.279,
+   "lole_analytic": 4.265,
+   "eens": 505.6,
+   "lolf": 0.995,
+   "lold_h": 4.28,
+   "elcc_mc_pct": 18.34,
+   "elcc_analytic_pct": 18.65
+  },
+  "RTS:HIST": {
+   "lole": 3.937,
+   "lole_ci95": 0.274,
+   "lole_analytic": 3.942,
+   "eens": 458.3,
+   "lolf": 0.87,
+   "lold_h": 4.52,
+   "elcc_mc_pct": 19.77,
+   "elcc_analytic_pct": 20.21
+  },
+  "RTS:DATA-W": {
+   "lole": 4.9,
+   "lole_ci95": 0.301,
+   "lole_analytic": 4.96,
+   "eens": 576.9,
+   "lolf": 1.079,
+   "lold_h": 4.54,
+   "elcc_mc_pct": 29.31,
+   "elcc_analytic_pct": 29.28
+  },
+  "RTS:DATA-PV": {
+   "lole": 7.47,
+   "lole_ci95": 0.399,
+   "lole_analytic": 7.56,
+   "eens": 930.7,
+   "lolf": 1.6,
+   "lold_h": 4.67,
+   "elcc_mc_pct": 10.1,
+   "elcc_analytic_pct": 10.39
+  },
+  "KSE:BAU": {
+   "lole": 3.058,
+   "lole_ci95": 0.237,
+   "lole_analytic": 3.0,
+   "eens": 301.3,
+   "lolf": 0.627,
+   "lold_h": 4.88,
+   "elcc_mc_pct": NaN,
+   "elcc_analytic_pct": NaN
+  },
+  "KSE:LIT": {
+   "lole": 1.137,
+   "lole_ci95": 0.127,
+   "lole_analytic": 1.214,
+   "eens": 102.3,
+   "lolf": 0.28,
+   "lold_h": 4.05,
+   "elcc_mc_pct": 20.71,
+   "elcc_analytic_pct": 20.3
+  },
+  "KSE:DATA": {
+   "lole": 1.107,
+   "lole_ci95": 0.125,
+   "lole_analytic": 1.185,
+   "eens": 99.4,
+   "lolf": 0.273,
+   "lold_h": 4.06,
+   "elcc_mc_pct": 21.23,
+   "elcc_analytic_pct": 20.82
+  },
+  "KSE:NOFOR": {
+   "lole": 1.09,
+   "lole_ci95": 0.124,
+   "lole_analytic": 1.169,
+   "eens": 97.9,
+   "lolf": 0.271,
+   "lold_h": 4.02,
+   "elcc_mc_pct": 21.55,
+   "elcc_analytic_pct": 21.13
+  },
+  "KSE:THESIS": {
+   "lole": 1.32,
+   "lole_ci95": 0.137,
+   "lole_analytic": 1.37,
+   "eens": 120.6,
+   "lolf": 0.328,
+   "lold_h": 4.02,
+   "elcc_mc_pct": 18.0,
+   "elcc_analytic_pct": 17.71
+  },
+  "KSE:HOM": {
+   "lole": 1.244,
+   "lole_ci95": 0.133,
+   "lole_analytic": 1.295,
+   "eens": 112.3,
+   "lolf": 0.306,
+   "lold_h": 4.07,
+   "elcc_mc_pct": 19.11,
+   "elcc_analytic_pct": 18.92
+  },
+  "KSE:HIST": {
+   "lole": 1.274,
+   "lole_ci95": 0.136,
+   "lole_analytic": 1.308,
+   "eens": 115.4,
+   "lolf": 0.294,
+   "lold_h": 4.34,
+   "elcc_mc_pct": 18.62,
+   "elcc_analytic_pct": 18.66
+  },
+  "KSE:DATA-W": {
+   "lole": 1.452,
+   "lole_ci95": 0.147,
+   "lole_analytic": 1.509,
+   "eens": 131.4,
+   "lolf": 0.332,
+   "lold_h": 4.37,
+   "elcc_mc_pct": 31.29,
+   "elcc_analytic_pct": 30.68
+  },
+  "KSE:DATA-PV": {
+   "lole": 2.432,
+   "lole_ci95": 0.204,
+   "lole_analytic": 2.408,
+   "eens": 235.1,
+   "lolf": 0.546,
+   "lold_h": 4.46,
+   "elcc_mc_pct": 10.22,
+   "elcc_analytic_pct": 10.14
+  }
+ },
+ "elcc_curves": {
+  "KSE:wind:hist:0.02": 29.59,
+  "KSE:pv:hist:0.02": 12.38,
+  "KSE:wind+pv:hist:0.02": 21.52,
+  "KSE:wind:hist:0.05": 28.33,
+  "KSE:pv:hist:0.05": 11.58,
+  "KSE:wind+pv:hist:0.05": 21.0,
+  "KSE:wind:hist:0.1": 26.49,
+  "KSE:pv:hist:0.1": 10.18,
+  "KSE:wind+pv:hist:0.1": 20.24,
+  "KSE:wind:hist:0.2": 23.43,
+  "KSE:pv:hist:0.2": 8.22,
+  "KSE:wind+pv:hist:0.2": 18.98,
+  "KSE:wind:hist:0.3": 21.01,
+  "KSE:pv:hist:0.3": 6.92,
+  "KSE:wind+pv:hist:0.3": 17.8,
+  "KSE:wind:hist:0.4": 19.09,
+  "KSE:pv:hist:0.4": 5.98,
+  "KSE:wind+pv:hist:0.4": 16.77,
+  "KSE:wind:hist:0.6": 16.33,
+  "KSE:pv:hist:0.6": 4.69,
+  "KSE:wind+pv:hist:0.6": 15.04,
+  "KSE:wind:hist:0.8": 14.41,
+  "KSE:pv:hist:0.8": 3.87,
+  "KSE:wind+pv:hist:0.8": 13.67,
+  "KSE:wind:hist:1": 13.0,
+  "KSE:pv:hist:1": 3.29,
+  "KSE:wind+pv:hist:1": 12.6,
+  "KSE:wind:seasonal:0.02": 33.8,
+  "KSE:pv:seasonal:0.02": 13.19,
+  "KSE:wind+pv:seasonal:0.02": 24.01,
+  "KSE:wind:seasonal:0.05": 32.63,
+  "KSE:pv:seasonal:0.05": 12.14,
+  "KSE:wind+pv:seasonal:0.05": 23.47,
+  "KSE:wind:seasonal:0.1": 30.8,
+  "KSE:pv:seasonal:0.1": 10.58,
+  "KSE:wind+pv:seasonal:0.1": 22.64,
+  "KSE:wind:seasonal:0.2": 27.55,
+  "KSE:pv:seasonal:0.2": 8.47,
+  "KSE:wind+pv:seasonal:0.2": 21.13,
+  "KSE:wind:seasonal:0.3": 24.91,
+  "KSE:pv:seasonal:0.3": 7.07,
+  "KSE:wind+pv:seasonal:0.3": 19.79,
+  "KSE:wind:seasonal:0.4": 22.77,
+  "KSE:pv:seasonal:0.4": 6.08,
+  "KSE:wind+pv:seasonal:0.4": 18.6,
+  "KSE:wind:seasonal:0.6": 19.64,
+  "KSE:pv:seasonal:0.6": 4.73,
+  "KSE:wind+pv:seasonal:0.6": 16.56,
+  "KSE:wind:seasonal:0.8": 17.46,
+  "KSE:pv:seasonal:0.8": 3.86,
+  "KSE:wind+pv:seasonal:0.8": 14.99,
+  "KSE:wind:seasonal:1": 15.85,
+  "KSE:pv:seasonal:1": 3.25,
+  "KSE:wind+pv:seasonal:1": 13.73,
+  "KSE:wind:homogeneous:0.02": 27.89,
+  "KSE:pv:homogeneous:0.02": 15.96,
+  "KSE:wind+pv:homogeneous:0.02": 22.32,
+  "KSE:wind:homogeneous:0.05": 26.91,
+  "KSE:pv:homogeneous:0.05": 14.73,
+  "KSE:wind+pv:homogeneous:0.05": 21.75,
+  "KSE:wind:homogeneous:0.1": 25.41,
+  "KSE:pv:homogeneous:0.1": 12.97,
+  "KSE:wind+pv:homogeneous:0.1": 20.85,
+  "KSE:wind:homogeneous:0.2": 22.93,
+  "KSE:pv:homogeneous:0.2": 10.37,
+  "KSE:wind+pv:homogeneous:0.2": 19.25,
+  "KSE:wind:homogeneous:0.3": 20.92,
+  "KSE:pv:homogeneous:0.3": 8.5,
+  "KSE:wind+pv:homogeneous:0.3": 17.89,
+  "KSE:wind:homogeneous:0.4": 19.33,
+  "KSE:pv:homogeneous:0.4": 7.12,
+  "KSE:wind+pv:homogeneous:0.4": 16.72,
+  "KSE:wind:homogeneous:0.6": 16.96,
+  "KSE:pv:homogeneous:0.6": 5.33,
+  "KSE:wind+pv:homogeneous:0.6": 14.8,
+  "KSE:wind:homogeneous:0.8": 15.26,
+  "KSE:pv:homogeneous:0.8": 4.23,
+  "KSE:wind+pv:homogeneous:0.8": 13.33,
+  "KSE:wind:homogeneous:1": 13.98,
+  "KSE:pv:homogeneous:1": 3.5,
+  "KSE:wind+pv:homogeneous:1": 12.2,
+  "RTS:wind:hist:0.02": 29.68,
+  "RTS:pv:hist:0.02": 11.15,
+  "RTS:wind+pv:hist:0.02": 21.12,
+  "RTS:wind:hist:0.05": 29.92,
+  "RTS:pv:hist:0.05": 11.0,
+  "RTS:wind+pv:hist:0.05": 21.93,
+  "RTS:wind:hist:0.1": 28.33,
+  "RTS:pv:hist:0.1": 10.21,
+  "RTS:wind+pv:hist:0.1": 21.62,
+  "RTS:wind:hist:0.2": 24.91,
+  "RTS:pv:hist:0.2": 8.1,
+  "RTS:wind+pv:hist:0.2": 20.52,
+  "RTS:wind:hist:0.3": 22.19,
+  "RTS:pv:hist:0.3": 6.67,
+  "RTS:wind+pv:hist:0.3": 19.32,
+  "RTS:wind:hist:0.4": 20.02,
+  "RTS:pv:hist:0.4": 5.7,
+  "RTS:wind+pv:hist:0.4": 18.17,
+  "RTS:wind:hist:0.6": 16.97,
+  "RTS:pv:hist:0.6": 4.44,
+  "RTS:wind+pv:hist:0.6": 16.2,
+  "RTS:wind:hist:0.8": 14.9,
+  "RTS:pv:hist:0.8": 3.65,
+  "RTS:wind+pv:hist:0.8": 14.66,
+  "RTS:wind:hist:1": 13.4,
+  "RTS:pv:hist:1": 3.07,
+  "RTS:wind+pv:hist:1": 13.45,
+  "RTS:wind:seasonal:0.02": 30.26,
+  "RTS:pv:seasonal:0.02": 12.23,
+  "RTS:wind+pv:seasonal:0.02": 22.37,
+  "RTS:wind:seasonal:0.05": 30.73,
+  "RTS:pv:seasonal:0.05": 11.94,
+  "RTS:wind+pv:seasonal:0.05": 22.75,
+  "RTS:wind:seasonal:0.1": 29.38,
+  "RTS:pv:seasonal:0.1": 10.87,
+  "RTS:wind+pv:seasonal:0.1": 22.39,
+  "RTS:wind:seasonal:0.2": 26.41,
+  "RTS:pv:seasonal:0.2": 8.47,
+  "RTS:wind+pv:seasonal:0.2": 21.1,
+  "RTS:wind:seasonal:0.3": 23.97,
+  "RTS:pv:seasonal:0.3": 6.87,
+  "RTS:wind+pv:seasonal:0.3": 19.75,
+  "RTS:wind:seasonal:0.4": 21.96,
+  "RTS:pv:seasonal:0.4": 5.79,
+  "RTS:wind+pv:seasonal:0.4": 18.58,
+  "RTS:wind:seasonal:0.6": 19.02,
+  "RTS:pv:seasonal:0.6": 4.51,
+  "RTS:wind+pv:seasonal:0.6": 16.63,
+  "RTS:wind:seasonal:0.8": 16.99,
+  "RTS:pv:seasonal:0.8": 3.65,
+  "RTS:wind+pv:seasonal:0.8": 15.07,
+  "RTS:wind:seasonal:1": 15.44,
+  "RTS:pv:seasonal:1": 3.06,
+  "RTS:wind+pv:seasonal:1": 13.83,
+  "RTS:wind:homogeneous:0.02": 25.64,
+  "RTS:pv:homogeneous:0.02": 13.18,
+  "RTS:wind+pv:homogeneous:0.02": 19.9,
+  "RTS:wind:homogeneous:0.05": 26.38,
+  "RTS:pv:homogeneous:0.05": 13.44,
+  "RTS:wind+pv:homogeneous:0.05": 20.76,
+  "RTS:wind:homogeneous:0.1": 25.3,
+  "RTS:pv:homogeneous:0.1": 12.15,
+  "RTS:wind+pv:homogeneous:0.1": 20.31,
+  "RTS:wind:homogeneous:0.2": 23.06,
+  "RTS:pv:homogeneous:0.2": 9.79,
+  "RTS:wind+pv:homogeneous:0.2": 18.95,
+  "RTS:wind:homogeneous:0.3": 21.08,
+  "RTS:pv:homogeneous:0.3": 7.95,
+  "RTS:wind+pv:homogeneous:0.3": 17.68,
+  "RTS:wind:homogeneous:0.4": 19.54,
+  "RTS:pv:homogeneous:0.4": 6.74,
+  "RTS:wind+pv:homogeneous:0.4": 16.55,
+  "RTS:wind:homogeneous:0.6": 17.29,
+  "RTS:pv:homogeneous:0.6": 5.0,
+  "RTS:wind+pv:homogeneous:0.6": 14.75,
+  "RTS:wind:homogeneous:0.8": 15.59,
+  "RTS:pv:homogeneous:0.8": 3.97,
+  "RTS:wind+pv:homogeneous:0.8": 13.35,
+  "RTS:wind:homogeneous:1": 14.32,
+  "RTS:pv:homogeneous:1": 3.28,
+  "RTS:wind+pv:homogeneous:1": 12.27
+ },
+ "elcc_points": {
+  "KSE:pv:hist": {
+   "min": 9.15,
+   "median": 9.63,
+   "max": 10.89,
+   "cf_min": 13.74,
+   "cf_max": 14.71,
+   "best_site": "N49.50E22.10",
+   "corr_elcc_cf": 0.882
+  },
+  "KSE:pv:seasonal": {
+   "min": 9.41,
+   "median": 9.96,
+   "max": 11.43,
+   "cf_min": 14.39,
+   "cf_max": 15.28,
+   "best_site": "N50.40E18.35",
+   "corr_elcc_cf": 0.861
+  },
+  "KSE:wind:hist": {
+   "min": 21.68,
+   "median": 25.32,
+   "max": 29.45,
+   "cf_min": 24.77,
+   "cf_max": 34.6,
+   "best_site": "N54.00E15.35",
+   "corr_elcc_cf": 0.935
+  },
+  "KSE:wind:seasonal": {
+   "min": 25.87,
+   "median": 29.35,
+   "max": 34.39,
+   "cf_min": 24.77,
+   "cf_max": 34.6,
+   "best_site": "N54.00E15.35",
+   "corr_elcc_cf": 0.991
+  },
+  "RTS:pv:hist": {
+   "min": 8.95,
+   "median": 9.94,
+   "max": 11.14,
+   "cf_min": 13.77,
+   "cf_max": 14.73,
+   "best_site": "N50.40E18.35",
+   "corr_elcc_cf": 0.845
+  },
+  "RTS:pv:seasonal": {
+   "min": 9.78,
+   "median": 10.54,
+   "max": 11.58,
+   "cf_min": 14.42,
+   "cf_max": 15.31,
+   "best_site": "N50.40E18.35",
+   "corr_elcc_cf": 0.874
+  },
+  "RTS:wind:hist": {
+   "min": 23.9,
+   "median": 27.23,
+   "max": 31.49,
+   "cf_min": 24.72,
+   "cf_max": 34.53,
+   "best_site": "N54.00E15.35",
+   "corr_elcc_cf": 0.961
+  },
+  "RTS:wind:seasonal": {
+   "min": 24.74,
+   "median": 28.2,
+   "max": 33.01,
+   "cf_min": 24.74,
+   "cf_max": 34.57,
+   "best_site": "N54.00E15.35",
+   "corr_elcc_cf": 0.993
+  }
+ },
+ "structural": {
+  "literature": {
+   "wind": {
+    "for": 0.05,
+    "mttr_h": 80.0
+   },
+   "pv": {
+    "for": 0.03,
+    "mttr_h": 24.0
+   }
+  },
+  "data": {
+   "wind": {
+    "for": 0.004218143659751431,
+    "mttr_h": 12.93541099773243,
+    "source": "Kelmarsh wind farm status logs 2016-04-15..2021-12-31, 6 x Senvion MM92"
+   },
+   "pv": {
+    "for": 0.05729243474413803,
+    "mttr_h": 388.5,
+    "source": "NREL PVDAQ system 34, 2016-2017, single inverter; daylight time with POA > 200 W/m2"
+   }
+  }
+ },
+ "markov": {
+  "wind": {
+   "mean": {
+    "data": 0.28657081652754435,
+    "homogeneous": 0.2860304152663507,
+    "seasonal": 0.28921201824503456
+   },
+   "acf24": {
+    "data": 0.524,
+    "homogeneous": 0.308,
+    "seasonal": 0.4
+   },
+   "spells": {
+    "hours": [
+     6,
+     12,
+     24,
+     36,
+     48,
+     72,
+     96,
+     120
+    ],
+    "data": [
+     103.2,
+     69.8,
+     21.9,
+     11.3,
+     4.5,
+     1.3,
+     0.3,
+     0.1
+    ],
+    "homogeneous": [
+     116.1,
+     67.6,
+     25.5,
+     8.9,
+     2.9,
+     0.5,
+     0.0,
+     0.0
+    ],
+    "seasonal": [
+     113.0,
+     66.5,
+     22.8,
+     9.4,
+     2.8,
+     0.4,
+     0.1,
+     0.0
+    ]
+   },
+   "longest": {
+    "data": 165,
+    "homogeneous": 92,
+    "seasonal": 102
+   }
+  },
+  "pv": {
+   "mean": {
+    "data": 0.14262414849363472,
+    "homogeneous": 0.1441641888800738,
+    "seasonal": 0.14843716695934447
+   },
+   "acf24": {
+    "data": 0.943,
+    "homogeneous": 0.837,
+    "seasonal": 0.896
+   }
+  }
+ },
+ "cross_validation": {
+  "pv": {
+   "ll_iid": -1.5354,
+   "ll_homogeneous": -0.9402,
+   "ll_seasonal": -0.9285,
+   "ll_test_fit": -0.9383,
+   "ag_p_median": 0.0581,
+   "ag_p_below_005": 13,
+   "n": 29,
+   "max_abs_dP_median": 0.0293
+  },
+  "wind": {
+   "ll_iid": -1.3116,
+   "ll_homogeneous": -0.4739,
+   "ll_seasonal": -0.4704,
+   "ll_test_fit": -0.4735,
+   "ag_p_median": 0.0352,
+   "ag_p_below_005": 16,
+   "n": 29,
+   "max_abs_dP_median": 0.0115
+  }
+ },
+ "load_profiles": {
+  "years": [
+   {
+    "year": 2015,
+    "peak_mw": 24820.938,
+    "mean_mw": 18418.759993607306,
+    "load_factor": 0.7420654285348647,
+    "energy_twh": 161.348337544
+   },
+   {
+    "year": 2016,
+    "peak_mw": 25446.588,
+    "mean_mw": 18718.172992922373,
+    "load_factor": 0.7355867510772908,
+    "energy_twh": 163.97119541799998
+   },
+   {
+    "year": 2017,
+    "peak_mw": 26046.063,
+    "mean_mw": 19219.602891666662,
+    "load_factor": 0.7379081779717213,
+    "energy_twh": 168.36372133099997
+   },
+   {
+    "year": 2018,
+    "peak_mw": 26297.15,
+    "mean_mw": 19531.840904908677,
+    "load_factor": 0.7427360343196383,
+    "energy_twh": 171.09892632700002
+   },
+   {
+    "year": 2019,
+    "peak_mw": 26135.575,
+    "mean_mw": 19282.85108824201,
+    "load_factor": 0.7378009126733202,
+    "energy_twh": 168.917775533
+   },
+   {
+    "year": 2020,
+    "peak_mw": 26532.363,
+    "mean_mw": 18819.488301255707,
+    "load_factor": 0.709303136748721,
+    "energy_twh": 164.85871751899998
+   },
+   {
+    "year": 2021,
+    "peak_mw": 27374.675,
+    "mean_mw": 19935.37814908676,
+    "load_factor": 0.7282416375385922,
+    "energy_twh": 174.633912586
+   },
+   {
+    "year": 2022,
+    "peak_mw": 27211.425,
+    "mean_mw": 19679.55951723744,
+    "load_factor": 0.7232094429908555,
+    "energy_twh": 172.39294137099998
+   },
+   {
+    "year": 2023,
+    "peak_mw": 27105.725,
+    "mean_mw": 18961.38592819635,
+    "load_factor": 0.6995343577121198,
+    "energy_twh": 166.101740731
+   },
+   {
+    "year": 2024,
+    "peak_mw": 28303.875,
+    "mean_mw": 18699.50685504398,
+    "load_factor": 0.6606694968460671,
+    "energy_twh": 163.80768005018527
+   }
+  ],
+  "kse_scaled_peak_mw": 2504.841262584803,
+  "kse_note": "PSE KSE demand 2015-2024, each year scaled to peak 2505 MW (conventional-only LOLE = 3 h/yr)",
+  "rts_load_factor": 0.6143995691849817,
+  "api_start": "2024-06-14",
+  "api_splice_factor": 1.007431,
+  "entsoe_2023_check": {
+   "assumed_timezone": "Europe/Warsaw",
+   "hours": 8734,
+   "r": 0.9809493551936014,
+   "mean_pse_mw": 18976.701217884132,
+   "mean_entsoe_mw": 18976.744051980764,
+   "mean_rel_diff": 2.2571940265087884e-06
+  }
+ },
+ "kse2850_bau": {
+  "lole": 34.971112028540404,
+  "eens": 4630.251920180479,
+  "note": "PSE KSE demand scaled to the RTS-79 peak of 2850 MW (thesis scaling)"
+ },
+ "sensitivity_states": [
+  {
+   "n_states": 2,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 7.552,
+   "lole_analytic": 2.545
+  },
+  {
+   "n_states": 2,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 12.866,
+   "lole_analytic": 2.258
+  },
+  {
+   "n_states": 2,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 26.628,
+   "lole_analytic": 1.665
+  },
+  {
+   "n_states": 2,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 31.989,
+   "lole_analytic": 1.464
+  },
+  {
+   "n_states": 3,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 18.182,
+   "lole_analytic": 2.008
+  },
+  {
+   "n_states": 3,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 24.181,
+   "lole_analytic": 1.75
+  },
+  {
+   "n_states": 3,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.849,
+   "lole_analytic": 1.692
+  },
+  {
+   "n_states": 3,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 31.304,
+   "lole_analytic": 1.485
+  },
+  {
+   "n_states": 4,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 22.263,
+   "lole_analytic": 1.836
+  },
+  {
+   "n_states": 4,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 28.017,
+   "lole_analytic": 1.604
+  },
+  {
+   "n_states": 4,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.568,
+   "lole_analytic": 1.703
+  },
+  {
+   "n_states": 4,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 31.014,
+   "lole_analytic": 1.496
+  },
+  {
+   "n_states": 5,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 23.715,
+   "lole_analytic": 1.778
+  },
+  {
+   "n_states": 5,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 29.313,
+   "lole_analytic": 1.558
+  },
+  {
+   "n_states": 5,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.413,
+   "lole_analytic": 1.711
+  },
+  {
+   "n_states": 5,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 30.796,
+   "lole_analytic": 1.505
+  },
+  {
+   "n_states": 7,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 24.583,
+   "lole_analytic": 1.743
+  },
+  {
+   "n_states": 7,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 30.04,
+   "lole_analytic": 1.531
+  },
+  {
+   "n_states": 7,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.238,
+   "lole_analytic": 1.717
+  },
+  {
+   "n_states": 7,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 30.558,
+   "lole_analytic": 1.512
+  },
+  {
+   "n_states": 10,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 24.898,
+   "lole_analytic": 1.73
+  },
+  {
+   "n_states": 10,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 30.281,
+   "lole_analytic": 1.522
+  },
+  {
+   "n_states": 10,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.132,
+   "lole_analytic": 1.721
+  },
+  {
+   "n_states": 10,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 30.481,
+   "lole_analytic": 1.516
+  },
+  {
+   "n_states": 15,
+   "levels": "centre",
+   "model": "homogeneous",
+   "elcc_pct": 24.992,
+   "lole_analytic": 1.727
+  },
+  {
+   "n_states": 15,
+   "levels": "centre",
+   "model": "seasonal",
+   "elcc_pct": 30.311,
+   "lole_analytic": 1.522
+  },
+  {
+   "n_states": 15,
+   "levels": "mean",
+   "model": "homogeneous",
+   "elcc_pct": 25.097,
+   "lole_analytic": 1.723
+  },
+  {
+   "n_states": 15,
+   "levels": "mean",
+   "model": "seasonal",
+   "elcc_pct": 30.424,
+   "lole_analytic": 1.518
+  },
+  {
+   "n_states": 0,
+   "levels": "-",
+   "model": "hist",
+   "elcc_pct": 26.491,
+   "lole_analytic": 1.658
+  }
+ ],
+ "sensitivity_length": {
+  "1": {
+   "mean": 30.76,
+   "min": 27.41,
+   "max": 33.45
+  },
+  "2": {
+   "mean": 30.71,
+   "min": 28.9,
+   "max": 33.26
+  },
+  "3": {
+   "mean": 30.69,
+   "min": 29.24,
+   "max": 31.59
+  },
+  "5": {
+   "mean": 30.85,
+   "min": 30.57,
+   "max": 31.46
+  },
+  "10": {
+   "mean": 30.8,
+   "min": 30.8,
+   "max": 30.8
+  }
+ },
+ "sensitivity_years": {
+  "pv": {
+   "min": 8.43,
+   "max": 12.32,
+   "min_year": 2023,
+   "max_year": 2018
+  },
+  "wind": {
+   "min": 23.26,
+   "max": 31.65,
+   "min_year": 2023,
+   "max_year": 2020
+  }
+ },
+ "weather_load_pairing": {
+  "pv": {
+   "matched": 10.18,
+   "shifted_mean": 10.18,
+   "shifted_min": 10.07,
+   "shifted_max": 10.3
+  },
+  "wind": {
+   "matched": 26.49,
+   "shifted_mean": 29.14,
+   "shifted_min": 28.6,
+   "shifted_max": 29.99
+  }
+ },
+ "sensitivity_wind_speed": [
+  {
+   "wind_speed_factor": 0.9,
+   "model": "hist",
+   "cf_pct": 23.23,
+   "elcc_pct": 21.732,
+   "lole": 1.85
+  },
+  {
+   "wind_speed_factor": 0.9,
+   "model": "seasonal",
+   "cf_pct": 23.24,
+   "elcc_pct": 25.479,
+   "lole": 1.7
+  },
+  {
+   "wind_speed_factor": 0.95,
+   "model": "hist",
+   "cf_pct": 25.948,
+   "elcc_pct": 24.108,
+   "lole": 1.75
+  },
+  {
+   "wind_speed_factor": 0.95,
+   "model": "seasonal",
+   "cf_pct": 25.95,
+   "elcc_pct": 28.14,
+   "lole": 1.6
+  },
+  {
+   "wind_speed_factor": 1.0,
+   "model": "hist",
+   "cf_pct": 28.657,
+   "elcc_pct": 26.491,
+   "lole": 1.658
+  },
+  {
+   "wind_speed_factor": 1.0,
+   "model": "seasonal",
+   "cf_pct": 28.662,
+   "elcc_pct": 30.796,
+   "lole": 1.505
+  },
+  {
+   "wind_speed_factor": 1.05,
+   "model": "hist",
+   "cf_pct": 31.334,
+   "elcc_pct": 28.89,
+   "lole": 1.572
+  },
+  {
+   "wind_speed_factor": 1.05,
+   "model": "seasonal",
+   "cf_pct": 31.327,
+   "elcc_pct": 33.352,
+   "lole": 1.419
+  },
+  {
+   "wind_speed_factor": 1.1,
+   "model": "hist",
+   "cf_pct": 33.957,
+   "elcc_pct": 31.254,
+   "lole": 1.491
+  },
+  {
+   "wind_speed_factor": 1.1,
+   "model": "seasonal",
+   "cf_pct": 33.961,
+   "elcc_pct": 35.881,
+   "lole": 1.337
+  }
+ ],
+ "sensitivity_for": [
+  {
+   "for": 0.0,
+   "mode": "units",
+   "lole": 1.505,
+   "eens": 149.653,
+   "elcc_pct": 30.796
+  },
+  {
+   "for": 0.0,
+   "mode": "plant_bernoulli",
+   "lole": 1.505,
+   "eens": 149.653,
+   "elcc_pct": 30.796
+  },
+  {
+   "for": 0.05,
+   "mode": "units",
+   "lole": 1.553,
+   "eens": 154.834,
+   "elcc_pct": 29.423
+  },
+  {
+   "for": 0.05,
+   "mode": "plant_bernoulli",
+   "lole": 1.58,
+   "eens": 158.106,
+   "elcc_pct": 28.698
+  },
+  {
+   "for": 0.1,
+   "mode": "units",
+   "lole": 1.604,
+   "eens": 160.261,
+   "elcc_pct": 28.036
+  },
+  {
+   "for": 0.1,
+   "mode": "plant_bernoulli",
+   "lole": 1.655,
+   "eens": 166.56,
+   "elcc_pct": 26.69
+  }
+ ]
+}

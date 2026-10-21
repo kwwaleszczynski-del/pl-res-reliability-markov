@@ -1,0 +1,87 @@
+{
+ "years": [
+  {
+   "year": 2015,
+   "peak_mw": 24820.938,
+   "mean_mw": 18418.759993607306,
+   "load_factor": 0.7420654285348647,
+   "energy_twh": 161.348337544
+  },
+  {
+   "year": 2016,
+   "peak_mw": 25446.588,
+   "mean_mw": 18718.172992922373,
+   "load_factor": 0.7355867510772908,
+   "energy_twh": 163.97119541799998
+  },
+  {
+   "year": 2017,
+   "peak_mw": 26046.063,
+   "mean_mw": 19219.602891666662,
+   "load_factor": 0.7379081779717213,
+   "energy_twh": 168.36372133099997
+  },
+  {
+   "year": 2018,
+   "peak_mw": 26297.15,
+   "mean_mw": 19531.840904908677,
+   "load_factor": 0.7427360343196383,
+   "energy_twh": 171.09892632700002
+  },
+  {
+   "year": 2019,
+   "peak_mw": 26135.575,
+   "mean_mw": 19282.85108824201,
+   "load_factor": 0.7378009126733202,
+   "energy_twh": 168.917775533
+  },
+  {
+   "year": 2020,
+   "peak_mw": 26532.363,
+   "mean_mw": 18819.488301255707,
+   "load_factor": 0.709303136748721,
+   "energy_twh": 164.85871751899998
+  },
+  {
+   "year": 2021,
+   "peak_mw": 27374.675,
+   "mean_mw": 19935.37814908676,
+   "load_factor": 0.7282416375385922,
+   "energy_twh": 174.633912586
+  },
+  {
+   "year": 2022,
+   "peak_mw": 27211.425,
+   "mean_mw": 19679.55951723744,
+   "load_factor": 0.7232094429908555,
+   "energy_twh": 172.39294137099998
+  },
+  {
+   "year": 2023,
+   "peak_mw": 27105.725,
+   "mean_mw": 18961.38592819635,
+   "load_factor": 0.6995343577121198,
+   "energy_twh": 166.101740731
+  },
+  {
+   "year": 2024,
+   "peak_mw": 28303.875,
+   "mean_mw": 18699.50685504398,
+   "load_factor": 0.6606694968460671,
+   "energy_twh": 163.80768005018527
+  }
+ ],
+ "kse_scaled_peak_mw": 2504.841262584803,
+ "kse_note": "PSE KSE demand 2015-2024, each year scaled to peak 2505 MW (conventional-only LOLE = 3 h/yr)",
+ "rts_load_factor": 0.6143995691849817,
+ "api_start": "2024-06-14",
+ "api_splice_factor": 1.007431,
+ "entsoe_2023_check": {
+  "assumed_timezone": "Europe/Warsaw",
+  "hours": 8734,
+  "r": 0.9809493551936014,
+  "mean_pse_mw": 18976.701217884132,
+  "mean_entsoe_mw": 18976.744051980764,
+  "mean_rel_diff": 2.2571940265087884e-06
+ }
+}
