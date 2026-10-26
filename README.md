@@ -252,6 +252,62 @@ brings LOLE back to 3.0 h/yr, with power not limited and a round trip of 85 %, i
   pumped hydro or new firm capacity; in the real KSE all of them reduce the need. The robust result is the
   ratio between the weather models and the shape of the curve, not the GWh.
 
+### How sure are we?
+
+Ten weather years are a small sample, and the regime model was fitted on them. Three checks (method 9): a
+bootstrap over the weather years, the ERA5 decade against 100 simulated decades of every model, and every year
+predicted by models fitted on the other nine.
+
+**Bootstrap, 90 % intervals** (same draws for every model):
+
+| | historical weather | Markov, monthly | regime switching | regimes + temperature |
+|---|---|---|---|---|
+| wind ELCC without storage (10 % of peak), % | **26.5** (25.3-27.9) | 30.7 (30.3-31.2) | 30.7 (30.3-31.2) | 28.6 (27.8-29.5) |
+| difference to historical weather, points | | +2.8 to +5.7 | +2.7 to +5.6 | +0.9 to +3.4 |
+| 4 h storage ELCC, fleet 5 % of peak (2 x 10 % RES), % | **73.0** (71.3-74.8) | 74.0 (72.1-75.9) | 74.4 (72.4-76.3) | 74.6 (72.2-76.5) |
+| 4 h storage ELCC, fleet 20 % of peak, % | **49.0** (48.2-49.7) | 48.9 (47.9-49.9) | 49.1 (48.2-50.0) | 49.6 (48.5-50.5) |
+| storage for 30 % wind + PV, GWh (KSE scale) | **117** (100-135) | 65 (60-71) | 83 (74-95) | 101 (91-112) |
+| ratio to historical weather | | 0.48-0.66 | 0.60-0.86 | 0.76-0.99 |
+
+**Ten-year block test**: percentile of the ERA5 decade among 100 simulated decades of each model (outside 5-95 %
+marked *):
+
+| Statistic of the decade | Markov, monthly | regime switching | regimes + temperature |
+|---|---|---|---|
+| wind lulls of 3+ / 5+ days below 15 % | 100* / 100* | 94 / 83 | 92 / 86 |
+| October-March lulls of 3+ days | 100* | 80 | 83 |
+| lulls of 3+ days below 10 %; wind + PV lulls of 3+ days | 100* ; 100* | 68 ; 47 | 77 ; 39 |
+| longest lull of the year | 100* | 83 | 90 |
+| distribution of lull lengths (chi-square) | 100* | 57 | 50 |
+| hourly spells below 12.5 % of 48 h+ | 98* | 34 | 35 |
+| weakest week of the year (lowest 7-day mean CF) | 0* | 0* | 0* |
+| autocorrelation at 24 h | 100* | 2* | 1* |
+| coldest-third winter days with CF below 15 % | 100* | 100* | 70 |
+| wind CF in the 100 highest-load hours | 0* | 0* | 1* |
+| wind ELCC without storage | 0* | 0* | 0* |
+
+![Verification](docs/img/verification.png)
+
+- **The conclusions survive the small sample.** The monthly chain overstates wind ELCC by 2.8-5.7 points and
+  understates the storage needed for lulls by 34-52 %; both differences exclude zero. Storage of 1-8 h is valued
+  the same by every model within the intervals (the differences to historical weather include zero in 14 of 15
+  comparisons), so for short storage the choice of weather model really is secondary.
+- **The monthly chain fails as a model of lulls.** The ERA5 decade has more lulls of every kind than all 100
+  simulated decades, and in leave-one-year-out every held-out year has more lulls than the chain predicts (mean
+  PIT 0.93-0.96; its 80 % intervals contain the observed value in 2-3 of 10 years).
+- **The regime models pass on lulls**, including the whole distribution of lull lengths (chi-square at the 50-57th
+  percentile), winter lulls, dark calms of wind and PV and the longest lull of the year. Leave-one-year-out agrees:
+  PIT 0.53-0.65, 80 % intervals covering 7-10 of 10 years. Only the temperature model also gets the cold, calm
+  winter days right (70th percentile, PIT 0.65; without temperature the 100th).
+- **Where they still fail.** The weakest week of the year is too mild (8.9 % against 7.7 % CF; every simulated
+  decade is milder), the hourly autocorrelation at 24 h is slightly too high (0.55 against 0.52), and the coupling
+  with demand is only half there: wind output in the highest-load hours and wind ELCC stay above the data in
+  almost every simulated decade. This is why the temperature model still asks for 1-24 % less storage than
+  historical weather.
+- **It predicts the bad years.** Fitted on nine years and driven by the temperatures of the tenth, the temperature
+  model predicts the wind ELCC of the held-out year with a correlation of 0.74 (RMSE 3.2 points, bias +2.6). The
+  monthly chain has no skill (r = 0.06, bias +4.1), memory without temperature little (r = 0.31).
+
 ## Method
 
 ### Pipeline
@@ -443,6 +499,31 @@ every storage is full are skipped; the result is exactly the same as stepping th
   with free energy. $`E^*`$ is reported in hours of peak load and, scaled by the ratio of the 2024 KSE peak
   (28.3 GW) to the model peak (2505 MW), in GWh.
 
+### 9. Verification
+
+Ten weather years are a small sample and the regime model is fitted on them, so three checks are added
+(`run --stages verify`):
+
+- **Bootstrap over weather years.** The ten years are resampled with replacement (2000 times for the exact COPT
+  results, 1000 times for Monte Carlo, where the simulated years inside every chosen weather year are resampled
+  too). LOLE is computed once per year on a grid of load shifts (for ELCC) or storage energies (for $`E^*`$); a
+  replicate is a weighted mean of these curves, read off by linear interpolation. The same draws serve every
+  model, so differences between models get intervals as well. Intervals are the 5 and 95 % percentiles.
+- **Ten-year block test.** Every model is simulated as 100 independent decades, each with one synthetic version
+  of every weather year (with its temperatures and its load). A statistic of the ERA5 decade (lull counts, the
+  longest lull, the weakest week, autocorrelation, cold-calm days, wind in the highest-load hours, wind ELCC) is
+  placed among the 100 simulated decades: its percentile and a two-sided p-value. For the whole distribution of
+  lull lengths (1, 2, 3, 4, 5-6 and 7+ days) a chi-square distance to the model mean is compared the same way.
+- **Leave one year out.** Each year in turn is removed, all three models are fitted on the other nine and 100
+  synthetic versions of the held-out year are drawn (the temperature model with that year's temperatures,
+  classified with the climatology of the nine fitting years). Calibration of every annual statistic is the
+  probability integral transform (PIT): the share of synthetic versions below the observed value, uniform on
+  [0, 1] for a calibrated model. The wind ELCC of each held-out year (with its own load) is compared with the
+  model's prediction.
+- **Earlier years (prepared).** `run --stages long` tests the models fitted on 2015-2024 against ERA5 1980-2014
+  (and PSE demand 2010-2014): distributions, PIT and return levels of the longest lull and of the weakest week.
+  The data are fetched with `--data-dir data/long fetch-weather --start-year 1980 --end-year 2014`.
+
 ## Limitations
 
 - **A stylised system, not the real KSE.** The generating side is the IEEE RTS-79 fleet (no imports, planned
@@ -462,11 +543,12 @@ every storage is full are skipped; the result is exactly the same as stepping th
 - **First-order chains forget too fast.** Even the monthly chain underestimates multi-day lulls (see validation).
   Expected LOLE/EENS are not affected in a system without storage, but for storage the regime model or
   historical weather is needed.
-- **The regime model is still an approximation.** It is fitted on the same ten years it is validated on (only
-  quantities it is not fitted to are compared, but there is no out-of-sample test of lulls: ten years hold too
-  few long ones). The temperature covariate recovers about half of the cold-calm coupling, not all of it (wind
-  CF in the 100 highest-load hours and wind ELCC sit between the monthly chain and the data). Points share the
-  daily regime but move independently within it, which leaves the inter-point correlation below the data.
+- **The regime model is still an approximation.** Out of sample it is only tested by leaving one of ten years
+  out; ten years hold few long lulls, and nothing here tests a 1-in-20-year lull (the test against ERA5
+  1980-2014 is prepared, not yet run). The temperature covariate recovers about half of the cold-calm coupling
+  (wind CF in the 100 highest-load hours and wind ELCC stay significantly above the data), and the weakest week
+  of the year is too mild in every simulated decade. Points share the daily regime but move independently
+  within it, which leaves the inter-point correlation below the data.
 - **Independence.** The monthly wind and PV chains are simulated independently of each other and of the load;
   the regime models share one daily regime between wind and PV and condition it on temperature; the
   historical-weather variant keeps every correlation and is the reference.
@@ -526,6 +608,7 @@ python -m res_reliability fetch-weather               # ERA5, one request per po
 python -m res_reliability fetch-load                  # PSE demand 2015-2024, one month per request
 python -m res_reliability run                         # all stages -> results/ (~20 min + storage; --n-sims)
 python -m res_reliability run --stages weather storage --jobs 8   # regime models and storage only
+python -m res_reliability run --stages verify --jobs 4              # bootstrap, block test, leave one year out
 python -m res_reliability figures                     # docs/img/*.png
 python -m res_reliability dashboard                   # docs/index.html
 ```
@@ -548,6 +631,7 @@ src/res_reliability/
   storage.py     greedy storage on hourly margins, storage ELCC, energy needed for a LOLE target
   elcc.py        ELCC by LOLE equality (analytical and Monte Carlo)
   validation.py  residence times, autocorrelation, cross-validation, Anderson-Goodman test, lulls
+  verification.py  bootstrap over weather years, curve interpolation, ten-year block test, PIT
   analyses.py    study stages -> results/
   figures.py, dashboard.py
 ```

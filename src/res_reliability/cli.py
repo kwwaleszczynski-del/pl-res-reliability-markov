@@ -6,6 +6,9 @@ Usage:
     python -m res_reliability run                           # all stages -> results/
     python -m res_reliability run --stages markov elcc --n-sims 500
     python -m res_reliability run --stages weather storage --jobs 6   # regime models, storage
+    python -m res_reliability --data-dir data/long fetch-weather --start-year 1980 --end-year 2014 --budget 8000
+    python -m res_reliability --data-dir data/long fetch-load --start-year 2010 --end-year 2014
+    python -m res_reliability run --stages long             # models fitted on 2015-2024 against 1980-2014
     python -m res_reliability figures                       # README charts -> docs/img/
     python -m res_reliability dashboard                     # docs/index.html
 """
@@ -19,13 +22,14 @@ from pathlib import Path
 
 from res_reliability import config
 
-STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity", "weather", "storage"]
+STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity", "weather", "storage", "verify"]
 
 
 def _fetch_weather(args: argparse.Namespace) -> int:
     from res_reliability import weather
 
-    got = weather.fetch_all(budget=args.budget, pause_s=args.pause, data_dir=args.data_dir)
+    got = weather.fetch_all(start=f"{args.start_year}-01-01", end=f"{args.end_year}-12-31", budget=args.budget,
+                            pause_s=args.pause, data_dir=args.data_dir)
     logging.getLogger(__name__).info("%d of %d grid points cached", len(got), len(weather.GRID))
     return 0
 
@@ -33,7 +37,7 @@ def _fetch_weather(args: argparse.Namespace) -> int:
 def _fetch_load(args: argparse.Namespace) -> int:
     from res_reliability import pse
 
-    s = pse.fetch(data_dir=args.data_dir)
+    s = pse.fetch(list(range(args.start_year, args.end_year + 1)), data_dir=args.data_dir)
     logging.getLogger(__name__).info("KSE demand: %d hours, %s .. %s", len(s), s.index[0], s.index[-1])
     return 0
 
@@ -67,6 +71,10 @@ def _run(args: argparse.Namespace) -> int:
                 analyses.weather_stage(ctx)
             elif st == "storage":
                 analyses.storage_stage(ctx, args.n_sims, args.jobs, args.data_dir)
+            elif st == "verify":
+                analyses.verify_stage(ctx, args.n_sims, args.jobs, args.data_dir)
+            elif st == "long":
+                analyses.long_stage(ctx, args.long_dir, list(range(args.long_years[0], args.long_years[1] + 1)))
         log.info("stage %s done in %.0f s", st, time.time() - t0)
     try:
         analyses.summary()
@@ -98,17 +106,24 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("fetch-weather", help="download hourly ERA5 for the grid (Open-Meteo)")
     s.add_argument("--budget", type=float, default=2400.0, help="max Open-Meteo call weight per 24 h")
     s.add_argument("--pause", type=float, default=15.0, help="seconds between requests")
+    s.add_argument("--start-year", type=int, default=config.YEARS[0])
+    s.add_argument("--end-year", type=int, default=config.YEARS[-1])
     s.set_defaults(func=_fetch_weather)
 
     s = sub.add_parser("fetch-load", help="download hourly KSE demand from PSE")
+    s.add_argument("--start-year", type=int, default=config.YEARS[0])
+    s.add_argument("--end-year", type=int, default=config.YEARS[-1])
     s.set_defaults(func=_fetch_load)
 
     s = sub.add_parser("run", help="run study stages and write results/")
-    s.add_argument("--stages", nargs="+", choices=STAGES)
+    s.add_argument("--stages", nargs="+", choices=STAGES + ["long"], help="default: all except long")
     s.add_argument("--n-sims", type=int, default=2000, help="Monte Carlo years per variant")
     s.add_argument("--no-kse", action="store_true", help="skip the KSE load profile (RTS-79 only)")
     s.add_argument("--kelmarsh-dir", help="Kelmarsh data folder (default: KELMARSH_DATA_DIR)")
-    s.add_argument("--jobs", type=int, default=1, help="worker processes for the storage stage")
+    s.add_argument("--jobs", type=int, default=1, help="worker processes for the storage and verify stages")
+    s.add_argument("--long-dir", type=Path, default=config.DATA_DIR / "long",
+                   help="data folder of the earlier weather years (stage long)")
+    s.add_argument("--long-years", type=int, nargs=2, default=[1980, 2014], metavar=("FIRST", "LAST"))
     s.set_defaults(func=_run)
 
     s = sub.add_parser("figures", help="render README charts from results/")

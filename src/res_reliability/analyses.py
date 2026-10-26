@@ -14,10 +14,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy.optimize import brentq
 
 from res_reliability import config, elcc, markov as mk, montecarlo as mc, regimes as rgm, sites, storage as sto
-from res_reliability import structural, study, validation
+from res_reliability import structural, study, validation, verification
 from res_reliability.config import HOURS, LIT_PV, LIT_WIND, RESULTS_DIR, YEARS
 
 log = logging.getLogger(__name__)
@@ -438,6 +439,15 @@ def summary(results_dir: Path = RESULTS_DIR) -> dict:
                                         round(r.energy_gwh_kse, 1) for r in s.itertuples()}
         out["lole_without_storage"] = {f"{r.model}:{r.energy_share:g}": round(r.lole_no_storage, 2)
                                        for r in s.drop_duplicates(["model", "energy_share"]).itertuples()}
+    if (results_dir / "verification.json").exists():
+        v = j("verification.json")
+        out["verification_bootstrap"] = {f"{r['quantity']}:{r['model']}": [round(r["point"], 2)] +
+                                         [round(x, 2) for x in r["ci90"]] for r in v["bootstrap"]}
+        b = pd.read_csv(results_dir / "verification_blocks.csv")
+        out["verification_block_percentile"] = {f"{r.model}:{r.metric}": round(r.percentile, 1) for r in b.itertuples()}
+        out["verification_loyo"] = v["loyo_summary"]
+    if (results_dir / "verification_long.json").exists():
+        out["verification_long"] = j("verification_long.json")
     save_json("summary.json", out, results_dir)
     return out
 
@@ -921,3 +931,365 @@ def storage_stage(ctx: study.Context, n_sims: int = 2000, jobs: int = 1, data_di
                                    "supercapacitors in the main auctions; one value for every storage duration. "
                                    "Set yearly by regulation; verify the current regulation before use."})
     return {"elcc": df, "lulls": ldf}
+
+
+# --- 8. Verification: bootstrap over weather years, ten-year blocks, leave-one-year-out ---------
+
+N_BOOT = 2000
+N_BLOCK_PER_YEAR = 100  # synthetic versions of every weather year for the block test (= 100 ten-year blocks)
+N_LOYO = 100  # synthetic versions of a held-out year
+YEAR_STATS = {
+    "lulls_ge3_015": "wind lulls of 3+ days below 15 %, per year",
+    "lulls_ge5_015": "wind lulls of 5+ days below 15 %, per year",
+    "winter_ge3_015": "October-March lulls of 3+ days below 15 %, per year",
+    "lulls_ge3_010": "wind lulls of 3+ days below 10 %, per year",
+    "wind_pv_ge3_010": "wind + PV lulls of 3+ days below 10 %, per year",
+    "longest_015": "longest lull of the year below 15 %, days",
+    "min7_wind": "lowest 7-day mean wind CF of the year",
+    "spells_ge48h": "hourly wind spells below 12.5 % of 48 h+, per year",
+    "top100_wind": "wind CF in the 100 highest-load hours",
+    "cold_calm_share": "coldest-third winter days with wind CF below 15 %",
+}
+BLOCK_ONLY = {"acf24": "wind autocorrelation at 24 h", "wind_elcc": "wind ELCC without storage (10 % of peak), %",
+              "lull_lengths_chi2": "lull length distribution (1, 2, 3, 4, 5-6, 7+ days below 15 %), chi-square"}
+LULL_CLASSES = ((1, 1), (2, 2), (3, 3), (4, 4), (5, 6), (7, 10**6))
+VERIFY_STORAGE = ((0.05, 1), (0.05, 2), (0.05, 4), (0.05, 8), (0.20, 4))  # fleet (share of peak), duration h
+VERIFY_LULL_SHARE = 0.3
+
+
+def year_stats(wind: np.ndarray, pv: np.ndarray, load: np.ndarray, load_rows: np.ndarray, cov_rows: np.ndarray,
+               months: np.ndarray) -> dict[str, np.ndarray]:
+    """Statistics of every year of (n, 8760) wind and PV. ``load_rows`` is the load year (row of ``load``) of each
+    year and ``cov_rows`` (n, 365) its daily temperature classes (0 = coldest third)."""
+    md = rgm.day_months(months)
+    wd, pdl = rgm.daily_mean(wind), rgm.daily_mean(pv)
+    comb = 0.5 * (wd + pdl)
+    winter = np.isin(md, WINTER_MONTHS)
+    djf = rgm.SEASON_OF_MONTH[md - 1] == 0
+    top = np.argsort(load, axis=1)[:, -100:]
+    out = {k: np.empty(len(wind)) for k in YEAR_STATS}
+    for i in range(len(wind)):
+        r15 = validation.low_runs(wd[i][None], 0.15)
+        out["lulls_ge3_015"][i] = (r15 >= 3).sum()
+        out["lulls_ge5_015"][i] = (r15 >= 5).sum()
+        out["longest_015"][i] = r15.max() if len(r15) else 0
+        out["winter_ge3_015"][i] = (validation.low_runs(np.where(winter, wd[i], 1.0)[None], 0.15) >= 3).sum()
+        out["lulls_ge3_010"][i] = (validation.low_runs(wd[i][None], 0.10) >= 3).sum()
+        out["wind_pv_ge3_010"][i] = (validation.low_runs(comb[i][None], 0.10) >= 3).sum()
+        out["min7_wind"][i] = validation.rolling_min_mean(wd[i][None], 7)[0]
+        out["spells_ge48h"][i] = (validation.sojourns(mk.discretize(wind[i], 5), 5)[0] >= 48).sum()
+        out["top100_wind"][i] = wind[i, top[load_rows[i]]].mean()
+        cold = djf & (cov_rows[i] == 0)
+        out["cold_calm_share"][i] = (wd[i, cold] < 0.15).mean() if cold.any() else np.nan
+    return out
+
+
+def _lull_class_counts(wind: np.ndarray) -> np.ndarray:
+    runs = validation.low_runs(rgm.daily_mean(wind), 0.15)
+    return np.array([((runs >= a) & (runs <= b)).sum() for a, b in LULL_CLASSES], dtype=float)
+
+
+def block_tests(ctx: study.Context, n_per_year: int = N_BLOCK_PER_YEAR) -> pd.DataFrame:
+    """ERA5 decade against 100 ten-year blocks of every weather model."""
+    pf, load = ctx.portfolio, ctx.loads["KSE"]
+    w_t = study.regime_weather(ctx, "regime_t")
+    ny, h, cap = len(YEARS), study.hours_of(load), RES_SHARE * load.peak
+    data = {k: float(np.nanmean(v)) for k, v in
+            year_stats(pf.wind, pf.pv, load.matrix, np.arange(ny), w_t.cov, ctx.months).items()}
+    data["acf24"] = float(validation.acf(pf.wind, 24)[24])
+    data["wind_elcc"] = 100 * elcc.elcc(ctx.copt, load.matrix, elcc.historical(pf.wind, cap, h)) / cap
+    data_counts = _lull_class_counts(pf.wind)
+    rows = []
+    for m in WEATHER_MODELS:
+        s = simulate_weather(ctx, m, n_per_year)
+        ys = year_stats(s["wind"], s["pv"], load.matrix, s["years"], w_t.cov[s["years"]], ctx.months)
+        blocks = np.arange(len(s["wind"])).reshape(-1, ny)  # synthetic years b*10 .. b*10+9 = weather years 0..9
+        vals = {k: np.array([np.nanmean(v[b]) for b in blocks]) for k, v in ys.items()}
+        vals["acf24"] = np.array([validation.acf(s["wind"][b], 24)[24] for b in blocks])
+        vals["wind_elcc"] = np.array([100 * elcc.elcc(ctx.copt, load.matrix, elcc.historical(s["wind"][b], cap, h))
+                                      / cap for b in blocks])
+        counts = np.stack([_lull_class_counts(s["wind"][b]) for b in blocks])
+        expected = np.maximum(counts.mean(axis=0), 0.5)
+        chi2 = lambda c: float((((c - expected) ** 2) / expected).sum())  # noqa: E731
+        block_chi2 = np.array([chi2(c) for c in counts])
+        for k in list(YEAR_STATS) + ["acf24", "wind_elcc"]:
+            rows.append({"model": m, "metric": k, **verification.block_test(data[k], vals[k])})
+        t = verification.block_test(chi2(data_counts), block_chi2)
+        t["p_value"] = float((block_chi2 >= t["data"]).mean())  # one-sided: a worse fit than a typical block
+        rows.append({"model": m, "metric": "lull_lengths_chi2", **t})
+        log.info("block test %s done", m)
+    return pd.DataFrame(rows)
+
+
+def _loyo_sample(ctx: study.Context, model: str, y: int, n: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
+    """``n`` synthetic versions of weather year ``y`` from a model fitted on the other years."""
+    pf = ctx.portfolio
+    rows = np.array([j for j in range(len(YEARS)) if j != y])
+    env, day = study.pv_envelope(pf)[[y]], pf.daylight[[y]]
+    zeros = np.zeros(n, dtype=np.int64)
+    rngs = lambda k: [np.random.default_rng([seed, y, k, i]) for i in range(n)]  # noqa: E731
+    if model == "seasonal":
+        pw = mc.MarkovProduction(study.fit_wind(pf, ctx.months, rows=rows), ctx.months)
+        pp = mc.MarkovProduction(study.fit_pv(pf, ctx.months, rows=rows), ctx.months, envelope=env, active=day)
+        return pw.sample(rngs(1), zeros, HOURS), pp.sample(rngs(2), zeros, HOURS)
+    w = rgm.fit_weather(pf.wind[rows], pf.pv_k[rows], pf.daylight[rows], ctx.months,
+                        temperature=ctx.t2m[rows] if model == "regime_t" else None)
+    if model == "regime_t":
+        w = w.for_years(ctx.t2m[[y]])
+    regs = w.regime_paths(rngs(0), zeros)
+    pw, pp = mc.RegimeProduction(w, "wind"), mc.RegimeProduction(w, "pv", envelope=env, active=day)
+    return pw.sample(rngs(1), zeros, HOURS, regs), pp.sample(rngs(2), zeros, HOURS, regs)
+
+
+def leave_one_year_out(ctx: study.Context, n: int = N_LOYO, seed: int = SEED) -> pd.DataFrame:
+    """Every weather year predicted by models fitted on the other nine (with its own temperatures and load)."""
+    pf, load = ctx.portfolio, ctx.loads["KSE"]
+    w_t = study.regime_weather(ctx, "regime_t")
+    h, cap = study.hours_of(load), RES_SHARE * load.peak
+    obs = year_stats(pf.wind, pf.pv, load.matrix, np.arange(len(YEARS)), w_t.cov, ctx.months)
+    rows = []
+    for y, year in enumerate(YEARS):
+        lm = load.matrix[[y]]
+        e_obs = 100 * elcc.elcc(ctx.copt, lm, elcc.historical(pf.wind[[y]], cap, h)) / cap
+        for m in WEATHER_MODELS:
+            xw, xp = _loyo_sample(ctx, m, y, n, seed)
+            ys = year_stats(xw, xp, load.matrix, np.full(n, y), np.repeat(w_t.cov[[y]], n, axis=0), ctx.months)
+            e_mod = 100 * elcc.elcc(ctx.copt, lm, _sampled_dist(xw, cap, 1)) / cap
+            for k, v in ys.items():
+                if not np.isfinite(obs[k][y]):
+                    continue
+                rows.append({"model": m, "year": year, "metric": k, "observed": obs[k][y],
+                             "model_mean": float(np.nanmean(v)), "model_p10": float(np.nanquantile(v, 0.1)),
+                             "model_p90": float(np.nanquantile(v, 0.9)), "pit": verification.pit(obs[k][y], v)})
+            rows.append({"model": m, "year": year, "metric": "wind_elcc", "observed": e_obs, "model_mean": e_mod,
+                         "model_p10": np.nan, "model_p90": np.nan, "pit": np.nan})
+        log.info("leave-one-year-out %d done", year)
+    return pd.DataFrame(rows)
+
+
+def _elcc_boot(ctx: study.Context, sims: dict, rng: np.random.Generator, n_boot: int = N_BOOT) -> list[dict]:
+    """Bootstrap over weather years of the ELCC of wind, PV and both without storage (exact COPT, KSE load)."""
+    pf, load = ctx.portfolio, ctx.loads["KSE"]
+    h, cap = study.hours_of(load), RES_SHARE * load.peak
+    ny = len(YEARS)
+    w = verification.year_weights(np.arange(ny), n_boot, rng, within=False)
+    base = verification.lole_by_year(ctx.copt, load.matrix, None)
+    grids = {"wind": (0.12, 0.45), "pv": (0.03, 0.20), "wind+pv": (0.18, 0.50)}
+    est = {}
+    for m in ("hist",) + WEATHER_MODELS:
+        for mix, (lo, hi) in grids.items():
+            if m == "hist":
+                x = {"wind": pf.wind, "pv": pf.pv, "wind+pv": pf.wind + pf.pv}[mix]
+                d = elcc.historical(x, cap * (2 if mix == "wind+pv" else 1), h)
+            else:
+                s = sims[m]
+                x = {"wind": s["wind"], "pv": s["pv"], "wind+pv": s["wind"] + s["pv"]}[mix]
+                d = _sampled_dist(x, cap * (2 if mix == "wind+pv" else 1), ny)
+            grid = np.linspace(lo, hi, 34) * d.capacity_mw
+            curves = np.stack([verification.lole_by_year(ctx.copt, load.matrix, d, s) for s in grid], axis=1)
+            point = verification.crossing(grid, curves.mean(axis=0)[None], base.mean())[0]
+            boot = verification.crossing(grid, w @ curves, w @ base)
+            est[(m, mix)] = (100 * point / d.capacity_mw, 100 * boot / d.capacity_mw)
+    rows = []
+    for (m, mix), (point, boot) in est.items():
+        diff = boot - est[("hist", mix)][1]
+        rows.append({"quantity": f"elcc_no_storage:{mix}", "model": m, "point": point,
+                     "ci90": verification.interval(boot), "diff_vs_hist_ci90": verification.interval(diff)})
+    return rows
+
+
+def _verify_mc_task(model: str, n_sims: int, data_dir) -> dict:
+    """Per-year LOLE curves of one weather model for the storage bootstrap (Monte Carlo)."""
+    ctx = _ctx(data_dir)
+    load = ctx.loads["KSE"]
+    params = structural_params()
+    k = _load_factor(ctx, 0.10)
+    plants = _res_plants(ctx, model, 0.10 * load.peak, 0.10 * load.peak, params)
+    r = mc.run(study.system_spec(ctx, study.LoadCase("KSE", k * load.matrix, ""), plants), n_sims, SEED,
+               keep_margin=True)
+    pp = POLICIES["losses"]
+    out = {"lole0": (r.margin < 0).sum(axis=1).astype(np.float32), "storage_curves": []}
+    for f, d in VERIFY_STORAGE:
+        p = f * load.peak
+        out["storage_curves"].append(verification.storage_lole_curves(
+            r.margin, p, p * d, np.linspace(0, p, 41), pp["efficiency"], pp["soc0"]).astype(np.float32))
+    growth = VERIFY_LULL_SHARE / (1 - VERIFY_LULL_SHARE)
+    cap = growth * load.matrix.mean() / (ctx.portfolio.wind.mean() + ctx.portfolio.pv.mean())
+    plants = _res_plants(ctx, model, cap, cap, params)
+    r = mc.run(study.system_spec(ctx, study.LoadCase("KSE", (1 + growth) * load.matrix, ""), plants), n_sims, SEED,
+               keep_margin=True)
+    lul = pd.read_csv(RESULTS_DIR / "storage_lulls.csv")
+    e_star = float(lul[(lul["model"] == model) & np.isclose(lul["energy_share"], VERIFY_LULL_SHARE)
+                       & (lul["policy"] == "losses") & np.isinf(lul["duration_h"])]["energy_mwh"].iloc[0])
+    out["energy_grid"] = e_star * np.logspace(-0.6, 0.6, 37)
+    out["energy_curves"] = verification.energy_lole_curves(r.margin, out["energy_grid"], POLICIES["losses"]["efficiency"],
+                                                           1.0, LULL_WARMUP_H).astype(np.float32)
+    log.info("verification curves %s done", model)
+    return out
+
+
+def _storage_boot(ctx: study.Context, n_sims: int, jobs: int, data_dir, rng: np.random.Generator,
+                  n_boot: int = 1000) -> list[dict]:
+    """Two-stage bootstrap (weather years, then simulated years) of storage ELCC and storage for lulls."""
+    _WORKER["ctx"] = ctx
+    curves = dict(zip(STORAGE_MODELS, _map(_verify_mc_task, [(m, n_sims, data_dir) for m in STORAGE_MODELS], jobs)))
+    base = mc.run(study.system_spec(ctx, ctx.loads["KSE"], []), n_sims, SEED).lole
+    w = verification.year_weights(np.arange(n_sims) % len(YEARS), n_boot, rng, within=True)
+    peak = ctx.loads["KSE"].peak
+    lp = json.loads((RESULTS_DIR / "load_profiles.json").read_text(encoding="utf-8"))
+    gwh = float(lp["years"][-1]["peak_mw"]) / peak / 1000
+    uniform = np.full((1, n_sims), 1.0 / n_sims)
+    est = {}
+    for m, c in curves.items():
+        for (f, d), cur in zip(VERIFY_STORAGE, c["storage_curves"]):
+            shifts = np.linspace(0, f * peak, 41)
+            point = verification.crossing(shifts, uniform @ cur.T, uniform @ c["lole0"])[0]
+            boot = verification.crossing(shifts, w @ cur.T, w @ c["lole0"])
+            est[(m, f"storage_elcc:{d:g}h:{100 * f:g}%")] = (100 * point / (f * peak), 100 * boot / (f * peak))
+        g = c["energy_grid"]
+        point = verification.crossing(g, uniform @ c["energy_curves"].T, uniform @ base, increasing=False, log=True)
+        boot = verification.crossing(g, w @ c["energy_curves"].T, w @ base, increasing=False, log=True)
+        at_edge = int(((boot <= g[0] * 1.0001) | (boot >= g[-1] * 0.9999)).sum())
+        if at_edge:
+            log.warning("%s: %d bootstrap replicates at the edge of the energy grid", m, at_edge)
+        est[(m, f"lull_energy_gwh:{100 * VERIFY_LULL_SHARE:g}%")] = (point[0] * gwh, boot * gwh)
+    rows = []
+    for (m, q), (point, boot) in est.items():
+        ref = est[("hist", q)][1]
+        rel = "ratio_vs_hist_ci90" if q.startswith("lull") else "diff_vs_hist_ci90"
+        cmp = boot / ref if q.startswith("lull") else boot - ref
+        rows.append({"quantity": q, "model": m, "point": point, "ci90": verification.interval(boot),
+                     rel: verification.interval(cmp)})
+    return rows
+
+
+def verify_stage(ctx: study.Context, n_sims: int = 2000, jobs: int = 1, data_dir=config.DATA_DIR) -> dict:
+    if "KSE" not in ctx.loads:
+        raise RuntimeError("the verification stage needs the KSE load")
+    rng = np.random.default_rng(SEED)
+    out: dict = {"n_boot_copt": N_BOOT, "n_boot_mc": 1000, "n_sims": n_sims, "years": YEARS}
+    sims = {m: simulate_weather(ctx, m, N_WEATHER_PER_YEAR) for m in WEATHER_MODELS}
+    out["bootstrap"] = _elcc_boot(ctx, sims, rng) + _storage_boot(ctx, n_sims, jobs, data_dir, rng)
+    blocks = block_tests(ctx)
+    save_csv("verification_blocks.csv", blocks)
+    loyo = leave_one_year_out(ctx)
+    save_csv("verification_loyo.csv", loyo)
+    summ = []
+    for (m, k), g in loyo.groupby(["model", "metric"]):
+        if k == "wind_elcc":
+            r = float(np.corrcoef(g["observed"], g["model_mean"])[0, 1])
+            summ.append({"model": m, "metric": k, "r_observed_predicted": r,
+                         "rmse": float(np.sqrt(((g["observed"] - g["model_mean"]) ** 2).mean())),
+                         "bias": float((g["model_mean"] - g["observed"]).mean())})
+            continue
+        p = g["pit"].to_numpy()
+        inside = ((g["observed"] >= g["model_p10"]) & (g["observed"] <= g["model_p90"])).mean()
+        summ.append({"model": m, "metric": k, "mean_pit": float(p.mean()), "coverage_80": float(inside),
+                     "ks_p_uniform": float(stats.kstest(p, "uniform").pvalue)})
+    out["loyo_summary"] = summ
+    out["metric_names"] = {**YEAR_STATS, **BLOCK_ONLY}
+    save_json("verification.json", out)
+    return out
+
+
+# --- 9. Out of sample: models fitted on the study years against earlier weather years ---------
+
+N_LONG_PER_YEAR = 40
+RETURN_PERIODS = (2, 5, 10, 20)
+
+
+def long_stage(ctx: study.Context, long_dir: Path, years: list[int], n_per_year: int = N_LONG_PER_YEAR,
+               seed: int = SEED, results_dir: Path = RESULTS_DIR) -> dict:
+    """Weather models fitted on the study years against other ERA5 years (and PSE demand where it exists).
+
+    The models keep their 2015-2024 parameters; the temperature-conditioned one is driven by the temperatures
+    of the test years, classified with the 2015-2024 climatology. Every test year gets ``n_per_year`` synthetic
+    versions. Compared: annual lull statistics (distribution, mean, PIT of every year among its own synthetic
+    versions, return levels of the longest lull and of the weakest week) and, for years with demand, wind output
+    in the highest-load hours and the wind ELCC of every year.
+    """
+    from res_reliability import pse, weather
+
+    pts = weather.available_points(data_dir=long_dir)
+    if len(pts) < len(ctx.sites):
+        raise RuntimeError(f"{len(pts)} of {len(ctx.sites)} grid points cached in {long_dir}; run fetch-weather")
+    lp = sites.portfolio([sites.build(p, years, long_dir) for p in pts])
+    t2m = sites.mean_temperature(pts, years, long_dir)
+    ny = len(years)
+    load, load_years = None, []
+    if pse.cache_path(long_dir).exists():
+        s = pse.fetch(years, data_dir=long_dir)
+        hours = s.groupby(s.index.year).size()
+        load_years = [y for y in years if hours.get(y, 0) >= HOURS - 24]
+        if load_years:
+            m = pse.year_matrix(s, load_years)
+            load = m / m.max(axis=1, keepdims=True) * ctx.loads["KSE"].peak
+    w_t = study.regime_weather(ctx, "regime_t")
+    cls = w_t.covariate_classes(t2m)
+    load_rows = np.array([load_years.index(y) if y in load_years else -1 for y in years])
+
+    def stats_of(wind, pv, rows):
+        lr = load_rows[rows]
+        st = year_stats(wind, pv, load if load is not None else np.zeros((1, HOURS)), np.maximum(lr, 0), cls[rows],
+                        ctx.months)
+        st["top100_wind"] = np.where(lr >= 0, st["top100_wind"], np.nan)
+        return st
+
+    obs = stats_of(lp.wind, lp.pv, np.arange(ny))
+    n = n_per_year * ny
+    sims = np.arange(n)
+    yidx = sims % ny
+    env, day = study.pv_envelope(lp), lp.daylight
+    wm, pm = study.fit_wind(ctx.portfolio, ctx.months), study.fit_pv(ctx.portfolio, ctx.months)
+    cap, h = RES_SHARE * ctx.loads["KSE"].peak, study.hours_of(ctx.loads["KSE"])
+    fit = year_stats(ctx.portfolio.wind, ctx.portfolio.pv, ctx.loads["KSE"].matrix, np.arange(len(YEARS)), w_t.cov,
+                     ctx.months)
+    out: dict = {"test_years": [years[0], years[-1]], "load_years": load_years, "n_per_year": n_per_year,
+                 "fit_years": [YEARS[0], YEARS[-1]],
+                 "observed_mean": {k: float(np.nanmean(v)) for k, v in obs.items() if np.isfinite(v).any()},
+                 "fit_period_mean": {k: float(np.nanmean(v)) for k, v in fit.items()}, "models": {}}
+    boot_idx = np.random.default_rng(seed).integers(0, ny, (N_BOOT, ny))
+    rows = []
+    for model in WEATHER_MODELS:
+        rngs = lambda k: [np.random.default_rng([seed, 9, k, int(i)]) for i in sims]  # noqa: E731
+        if model == "seasonal":
+            xw = mc.MarkovProduction(wm, ctx.months).sample(rngs(1), yidx, HOURS)
+            xp = mc.MarkovProduction(pm, ctx.months, envelope=env, active=day).sample(rngs(2), yidx, HOURS)
+        else:
+            w = study.regime_weather(ctx, "regime") if model == "regime" else w_t.for_years(t2m)
+            regs = w.regime_paths(rngs(0), yidx)
+            xw = mc.RegimeProduction(w, "wind").sample(rngs(1), yidx, HOURS, regs)
+            xp = mc.RegimeProduction(w, "pv", envelope=env, active=day).sample(rngs(2), yidx, HOURS, regs)
+        st = stats_of(xw, xp, yidx)
+        res: dict = {}
+        for k, v in obs.items():
+            ok = np.flatnonzero(np.isfinite(v))
+            if len(ok) == 0:
+                continue
+            per_year = {j: st[k][yidx == j] for j in ok}
+            pits = np.array([verification.pit(v[j], per_year[j]) for j in ok])
+            inside = [np.nanquantile(per_year[j], 0.1) <= v[j] <= np.nanquantile(per_year[j], 0.9) for j in ok]
+            res[k] = {"observed_mean": float(np.nanmean(v)), "model_mean": float(np.nanmean(st[k])),
+                      "observed_mean_ci90": verification.interval(np.nanmean(v[boot_idx], axis=1)),
+                      "ks_p": float(stats.ks_2samp(v[ok], st[k][np.isfinite(st[k])]).pvalue),
+                      "mean_pit": float(pits.mean()), "coverage_80": float(np.mean(inside)),
+                      "ks_p_pit_uniform": float(stats.kstest(pits, "uniform").pvalue)}
+            rows += [{"model": model, "year": years[j], "metric": k, "observed": float(v[j]),
+                      "model_mean": float(np.nanmean(per_year[j])), "pit": float(p)} for j, p in zip(ok, pits)]
+        res["return_levels"] = {
+            "longest_015": {f"{t}y": [float(np.quantile(obs["longest_015"], 1 - 1 / t)),
+                                      float(np.quantile(st["longest_015"], 1 - 1 / t))] for t in RETURN_PERIODS},
+            "min7_wind": {f"{t}y": [float(np.quantile(obs["min7_wind"], 1 / t)),
+                                    float(np.quantile(st["min7_wind"], 1 / t))] for t in RETURN_PERIODS}}
+        if load is not None:
+            e = []
+            for y in load_years:
+                j, lm = years.index(y), load[[load_years.index(y)]]
+                e.append([100 * elcc.elcc(ctx.copt, lm, elcc.historical(lp.wind[[j]], cap, h)) / cap,
+                          100 * elcc.elcc(ctx.copt, lm, _sampled_dist(xw[yidx == j], cap, 1)) / cap])
+            res["wind_elcc_by_year"] = {"years": load_years, "observed": [a for a, _ in e], "model": [b for _, b in e]}
+        out["models"][model] = res
+        log.info("out-of-sample %s done", model)
+    save_csv("verification_long.csv", pd.DataFrame(rows), results_dir)
+    save_json("verification_long.json", out, results_dir)
+    return out

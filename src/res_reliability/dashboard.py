@@ -44,7 +44,7 @@ def collect(results_dir: Path = RESULTS_DIR) -> dict:
         "validation": val,
         "kwd": j("kwd.json")["values"],
         "structural": st["parameters"],
-        "weather": None, "storage": None,
+        "weather": None, "storage": None, "verification": None,
     }
     if (results_dir / "weather_models.json").exists():
         w = j("weather_models.json")
@@ -55,6 +55,10 @@ def collect(results_dir: Path = RESULTS_DIR) -> dict:
     if (results_dir / "storage_elcc.csv").exists() and (results_dir / "storage_lulls.csv").exists():
         lulls = pd.read_csv(results_dir / "storage_lulls.csv")
         lulls["duration_h"] = lulls["duration_h"].replace(float("inf"), 0.0)  # 0 = power not limited (JSON)
+        if (results_dir / "verification.json").exists():
+            v = j("verification.json")
+            out["verification"] = {"bootstrap": v["bootstrap"], "loyo": v["loyo_summary"], "names": v["metric_names"],
+                                   "blocks": _records(results_dir / "verification_blocks.csv")}
         out["storage"] = {"elcc": _records(results_dir / "storage_elcc.csv"),
                           "lulls": json.loads(lulls.round(4).to_json(orient="records")),
                           "sweep": _records(results_dir / "storage_fleet_sweep.csv"),
@@ -305,6 +309,17 @@ temperature of the weather year; storage then runs inside the sequential Monte C
     <div id="sgwh" class="chart tall"></div>
     <p class="note">Smallest storage energy that brings LOLE back to the level without wind, PV or growth, in GWh
     scaled from the stylised system to the 2024 peak of the KSE (indicative).</p>
+  </div>
+</section>
+<section class="card" style="margin-top:16px" id="verify">
+  <h2>How sure are we?</h2>
+  <p class="note" style="margin-bottom:8px">Ten weather years are a small sample. Intervals: 90 % bootstrap over the
+  weather years (and the simulated years within them). Block test: where the ERA5 decade falls among 100 simulated
+  decades of each model (percentile; * outside 5-95 %). Leave one year out: every year predicted by a model fitted on
+  the other nine.</p>
+  <div class="grid">
+    <div class="span6" style="min-width:0"><div class="tablewrap"><table id="vboot"></table></div></div>
+    <div class="span6" style="min-width:0"><div class="tablewrap"><table id="vblock"></table></div></div>
   </div>
 </section>
 </div>
@@ -639,9 +654,31 @@ function drawSweep() {
   Plotly.react('sweep', tr, roomy(lay), cfg);
 }
 
+function verifyTables() {
+  const V = D.verification;
+  if (!V) { document.getElementById('verify').style.display = 'none'; return; }
+  const ms = ['hist', 'seasonal', 'regime', 'regime_t'];
+  const Q = [['elcc_no_storage:wind', 'wind ELCC without storage, %', 1], ['elcc_no_storage:wind+pv', 'wind + PV ELCC, %', 1],
+    ['storage_elcc:4h:5%', '4 h storage ELCC, fleet 5 %', 1], ['storage_elcc:4h:20%', '4 h storage ELCC, fleet 20 %', 1],
+    ['lull_energy_gwh:30%', 'storage for 30 % wind + PV, GWh', 0]];
+  const cell = (q, m, d) => { const r = V.bootstrap.find(x => x.quantity === q && x.model === m);
+    return r ? `${fmt(r.point, d)}<br><span class="note">${fmt(r.ci90[0], d)}-${fmt(r.ci90[1], d)}</span>` : '-'; };
+  document.getElementById('vboot').innerHTML = '<tr><th></th><th>hist.</th><th>monthly</th><th>regimes</th><th>+ temp.</th></tr>' +
+    Q.map(([q, l, d]) => `<tr><td>${l}</td>` + ms.map(m => `<td>${cell(q, m, d)}</td>`).join('') + '</tr>').join('');
+  const mods = ['seasonal', 'regime', 'regime_t'];
+  const metrics = [...new Set(V.blocks.map(r => r.metric))];
+  document.getElementById('vblock').innerHTML = '<tr><th>percentile of ERA5</th><th>monthly</th><th>regimes</th><th>+ temp.</th></tr>' +
+    metrics.map(k => `<tr><td>${V.names[k] || k}</td>` + mods.map(m => {
+      const r = V.blocks.find(x => x.metric === k && x.model === m);
+      if (!r) return '<td>-</td>';
+      const out = r.percentile < 5 || r.percentile > 95;
+      return `<td${out ? ' style="font-weight:650"' : ''}>${fmt(r.percentile, 0)}${out ? '*' : ''}</td>`;
+    }).join('') + '</tr>').join('');
+}
+
 function drawMemory() {
   if (!D.weather || !D.storage) { document.getElementById('memory').style.display = 'none'; return; }
-  storageTiles(); drawLulls(); weatherTable(); drawStorage(); drawSweep(); drawStorageLulls();
+  storageTiles(); drawLulls(); weatherTable(); drawStorage(); drawSweep(); drawStorageLulls(); verifyTables();
 }
 
 function drawAll() { tiles(); drawMap(); drawHeat(); drawLole(); drawElcc(); drawValidation(); drawTable(); drawMemory(); }

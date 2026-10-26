@@ -311,10 +311,28 @@ class RegimeWeather:
     cov: np.ndarray | None = None
     burn_in_days: int = 30
     hourly_cov: bool = False  # hourly chains per (month, regime, covariate class) instead of (month, regime)
+    cov_clim: np.ndarray | None = None  # (365,) temperature climatology of the fitting years
+    cov_edges: np.ndarray | None = None  # (4, n_cov - 1) anomaly class edges per season
 
     @property
     def n_regimes(self) -> int:
         return self.process.n_regimes
+
+    def covariate_classes(self, temperature: np.ndarray) -> np.ndarray:
+        """Temperature classes of other years (n, 8760) with the climatology and edges of the fitting years."""
+        anom = daily_mean(temperature) - self.cov_clim
+        seasons = SEASON_OF_MONTH[day_months(self.months) - 1]
+        out = np.empty(anom.shape, dtype=np.int64)
+        for s in range(N_SEASONS):
+            sel = seasons == s
+            out[:, sel] = np.digitize(anom[:, sel], self.cov_edges[s])
+        return out
+
+    def for_years(self, temperature: np.ndarray) -> "RegimeWeather":
+        """The same fitted model, driven by the temperatures of other years (held-out or earlier years)."""
+        from dataclasses import replace
+
+        return replace(self, cov=self.covariate_classes(temperature))
 
     @property
     def days(self) -> int:
@@ -389,11 +407,14 @@ def fit_weather(
     reg = np.digitize(ratio, edges)  # (years, days)
     md = day_months(months)
     seasons_d = SEASON_OF_MONTH[md - 1]
-    cov = None
+    cov = clim = cov_edges = None
     n_cov = 1
     if temperature is not None:
         td = daily_mean(temperature)
-        cov = quantile_classes(td - climatology(td), cov_quantiles, np.broadcast_to(seasons_d, td.shape))
+        clim = climatology(td)
+        anom = td - clim
+        cov = quantile_classes(anom, cov_quantiles, np.broadcast_to(seasons_d, td.shape))
+        cov_edges = np.stack([np.quantile(anom[:, seasons_d == s], cov_quantiles) for s in range(N_SEASONS)])
         n_cov = len(cov_quantiles) + 1
     K = len(quantiles) + 1
     proc = fit_process(reg.reshape(-1), np.tile(seasons_d, n_years), K,
@@ -405,4 +426,4 @@ def fit_weather(
     m_h = np.tile(months, n_years)
     w = fit_hourly(wind.reshape(-1), m_h, rg_h, n_cls, n_states)
     p = fit_hourly(pv_k.reshape(-1), m_h, rg_h, n_cls, n_states, valid=daylight.reshape(-1))
-    return RegimeWeather(proc, w, p, np.asarray(months), edges, cov, burn_in_days, hc)
+    return RegimeWeather(proc, w, p, np.asarray(months), edges, cov, burn_in_days, hc, clim, cov_edges)

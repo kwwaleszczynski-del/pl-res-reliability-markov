@@ -474,11 +474,75 @@ def storage_lulls_fig(results_dir=RESULTS_DIR):
     return save(fig, "storage_lulls.png")
 
 
+VERIFY_METRICS = {  # short labels of the block-test metrics, top to bottom
+    "lulls_ge3_015": "lulls 3+ d < 15 %", "lulls_ge5_015": "lulls 5+ d < 15 %", "winter_ge3_015": "winter lulls 3+ d",
+    "lulls_ge3_010": "lulls 3+ d < 10 %", "wind_pv_ge3_010": "wind + PV lulls 3+ d", "longest_015": "longest lull",
+    "min7_wind": "weakest week (CF)", "spells_ge48h": "hourly spells 48 h+", "acf24": "autocorrelation 24 h",
+    "lull_lengths_chi2": "lull lengths (chi-square)", "cold_calm_share": "cold winter days calm",
+    "top100_wind": "wind in top-100 load hours", "wind_elcc": "wind ELCC",
+}
+
+
+def verification_fig(results_dir=RESULTS_DIR):
+    v = _load_json("verification.json", results_dir)
+    boot = pd.DataFrame(v["bootstrap"])
+    blocks = pd.read_csv(results_dir / "verification_blocks.csv")
+    loyo = pd.read_csv(results_dir / "verification_loyo.csv")
+    fig, axes = plt.subplots(2, 2, figsize=(11, 8.2))
+    for ax, q, xlabel, title in (
+            (axes[0, 0], "elcc_no_storage:wind", "wind ELCC without storage, %", "Wind ELCC (10 % of peak)"),
+            (axes[0, 1], "lull_energy_gwh:30%", "storage energy, GWh at KSE scale",
+             "Storage that keeps LOLE (30 % wind + PV)")):
+        d = boot[boot["quantity"] == q].set_index("model")
+        for k, m in enumerate(STORAGE_ORDER[::-1]):
+            lo, hi = d.loc[m, "ci90"]
+            ax.plot([lo, hi], [k, k], color=MODEL_COLORS[m], linewidth=3, solid_capstyle="round")
+            ax.scatter(d.loc[m, "point"], k, color=MODEL_COLORS[m], s=55, zorder=3, edgecolors=SURFACE, linewidths=1.5)
+            ax.text(hi, k + 0.18, f"  {d.loc[m, 'point']:.1f}  ({lo:.1f}-{hi:.1f})", fontsize=8, color=INK2, va="bottom")
+        ax.set_yticks(range(4), [MODEL_NAMES[m] for m in STORAGE_ORDER[::-1]])
+        ax.set_ylim(-0.6, 3.8)
+        ax.set_xlabel(xlabel)
+        ax.set_title(title + ", 90 % bootstrap interval")
+        ax.grid(axis="y", visible=False)
+    ax = axes[1, 0]
+    ax.axvspan(5, 95, color=GRID, alpha=0.6, linewidth=0)
+    names = list(VERIFY_METRICS)[::-1]
+    for i, m in enumerate(WEATHER_ORDER[1:]):
+        d = blocks[blocks["model"] == m].set_index("metric")
+        ax.scatter(d.loc[names, "percentile"], np.arange(len(names)) + (i - 1) * 0.22, color=MODEL_COLORS[m], s=28,
+                   zorder=3, label=MODEL_NAMES[m])
+    ax.set_yticks(range(len(names)), [VERIFY_METRICS[n] for n in names])
+    ax.set_xlim(-3, 103)
+    ax.set_xlabel("percentile of ERA5 2015-2024 among 100 simulated decades")
+    ax.set_title("Ten-year block test (shaded: 5-95 %)")
+    ax.grid(axis="y", visible=False)
+    ax.legend(loc="upper left", fontsize=7.5)
+    ax = axes[1, 1]
+    e = loyo[loyo["metric"] == "wind_elcc"]
+    lims = [e[["observed", "model_mean"]].min().min() - 1, e[["observed", "model_mean"]].max().max() + 1]
+    ax.plot(lims, lims, color=BASE, linewidth=1)
+    for m in WEATHER_ORDER[1:]:
+        g = e[e["model"] == m]
+        r = np.corrcoef(g["observed"], g["model_mean"])[0, 1]
+        ax.scatter(g["observed"], g["model_mean"], color=MODEL_COLORS[m], s=36, label=f"{MODEL_NAMES[m]} (r = {r:.2f})",
+                   edgecolors=SURFACE, linewidths=1)
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    ax.set_xlabel("wind ELCC of the held-out year, historical weather, %")
+    ax.set_ylabel("predicted by the model fitted on the other 9 years, %")
+    ax.set_title("Leave one year out: wind ELCC of every year")
+    ax.legend(loc="lower right", fontsize=7.5)
+    fig.suptitle("Verification: uncertainty from ten weather years, simulated decades, held-out years",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "verification.png")
+
+
 def make_all(results_dir=RESULTS_DIR) -> list[Path]:
     style()
     out = []
     for fn in (transition_matrices, seasonality_and_persistence, variants, elcc_map, elcc_curves, lole_vs_share,
-               sensitivity, structural_fig, weather_models, storage_elcc_fig, storage_lulls_fig):
+               sensitivity, structural_fig, weather_models, storage_elcc_fig, storage_lulls_fig, verification_fig):
         try:
             out.append(fn(results_dir))
         except FileNotFoundError as exc:
