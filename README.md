@@ -495,7 +495,9 @@ every storage is full are skipped; the result is exactly the same as stepping th
   doi:10.25984/1846021, CC BY 4.0 (system 34).
 - **Capacity market:** regulations of the minister responsible for energy on auction parameters: Dz.U. 2024
   poz. 1154 (main auction, delivery 2029), Dz.U. 2025 poz. 1066 (main auction, 2030), Dz.U. 2026 poz. 1359
-  (additional auctions, 2028). KWD of batteries, kinetic storage and supercapacitors, par. 10 pkt 9 of each:
+  (additional auctions, 2028; regulation of 9 October 2026, with the same factors as the main auction for 2028 in
+  Dz.U. 2023 poz. 1561: onshore wind 12.62 %, solar 1.56 %, batteries 95.00 %). KWD of batteries, kinetic storage
+  and supercapacitors, par. 10 pkt 9 of each:
   95.00 % in Dz.U. 2023 poz. 1561 (regulation of 4 August 2023, main auction, delivery 2028), 61.30 % in Dz.U.
   2024 poz. 1154 (26 July 2024, delivery 2029) and 13.39 % in Dz.U. 2025 poz. 1066 (1 August 2025, delivery 2030,
   one group with pumped-storage plants), read from the published texts on eli.gov.pl in October 2026; to be
