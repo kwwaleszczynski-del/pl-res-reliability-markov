@@ -1,0 +1,201 @@
+model,series,season,days,per_year,at_least_per_year
+data,0.1,all,1,16.9,27
+data,0.1,all,2,6.4,10.1
+data,0.1,all,3,2.2,3.7
+data,0.1,all,4,0.9,1.5
+data,0.1,all,5,0.1,0.6
+data,0.1,all,6,0.1,0.5
+data,0.1,all,7,0.4,0.4
+data,0.1,all,8,0,0
+data,0.1,all,9,0,0
+data,0.1,all,10,0,0
+data,0.1,winter,1,5.9,8.3
+data,0.1,winter,2,1.7,2.4
+data,0.1,winter,3,0.3,0.7
+data,0.1,winter,4,0.4,0.4
+data,0.1,winter,5,0,0
+data,0.1,winter,6,0,0
+data,0.1,winter,7,0,0
+data,0.1,winter,8,0,0
+data,0.1,winter,9,0,0
+data,0.1,winter,10,0,0
+data,0.15,all,1,22.2,46.2
+data,0.15,all,2,11.5,24
+data,0.15,all,3,5.8,12.5
+data,0.15,all,4,2.5,6.7
+data,0.15,all,5,1.9,4.2
+data,0.15,all,6,0.7,2.3
+data,0.15,all,7,0.6,1.6
+data,0.15,all,8,0.2,1
+data,0.15,all,9,0.5,0.8
+data,0.15,all,10,0.3,0.3
+data,0.15,winter,1,10,17.8
+data,0.15,winter,2,4.2,7.8
+data,0.15,winter,3,1.7,3.6
+data,0.15,winter,4,1.2,1.9
+data,0.15,winter,5,0.5,0.7
+data,0.15,winter,6,0.1,0.2
+data,0.15,winter,7,0,0.1
+data,0.15,winter,8,0,0.1
+data,0.15,winter,9,0.1,0.1
+data,0.15,winter,10,0,0
+data,wind+pv 0.1,all,1,8.6,14.2
+data,wind+pv 0.1,all,2,3.4,5.6
+data,wind+pv 0.1,all,3,0.6,2.2
+data,wind+pv 0.1,all,4,1,1.6
+data,wind+pv 0.1,all,5,0.3,0.6
+data,wind+pv 0.1,all,6,0.2,0.3
+data,wind+pv 0.1,all,7,0,0.1
+data,wind+pv 0.1,all,8,0.1,0.1
+data,wind+pv 0.1,all,9,0,0
+data,wind+pv 0.1,all,10,0,0
+seasonal,0.1,all,1,16.045,20.435
+seasonal,0.1,all,2,3.57,4.39
+seasonal,0.1,all,3,0.565,0.82
+seasonal,0.1,all,4,0.195,0.255
+seasonal,0.1,all,5,0.04,0.06
+seasonal,0.1,all,6,0.01,0.02
+seasonal,0.1,all,7,0.01,0.01
+seasonal,0.1,all,8,0,0
+seasonal,0.1,all,9,0,0
+seasonal,0.1,all,10,0,0
+seasonal,0.1,winter,1,4.61,5.68
+seasonal,0.1,winter,2,0.96,1.07
+seasonal,0.1,winter,3,0.07,0.11
+seasonal,0.1,winter,4,0.03,0.04
+seasonal,0.1,winter,5,0.01,0.01
+seasonal,0.1,winter,6,0,0
+seasonal,0.1,winter,7,0,0
+seasonal,0.1,winter,8,0,0
+seasonal,0.1,winter,9,0,0
+seasonal,0.1,winter,10,0,0
+seasonal,0.15,all,1,26.665,42.52
+seasonal,0.15,all,2,9.86,15.855
+seasonal,0.15,all,3,3.535,5.995
+seasonal,0.15,all,4,1.4,2.46
+seasonal,0.15,all,5,0.615,1.06
+seasonal,0.15,all,6,0.24,0.445
+seasonal,0.15,all,7,0.095,0.205
+seasonal,0.15,all,8,0.045,0.11
+seasonal,0.15,all,9,0.03,0.065
+seasonal,0.15,all,10,0.035,0.035
+seasonal,0.15,winter,1,9.535,13.18
+seasonal,0.15,winter,2,2.8,3.645
+seasonal,0.15,winter,3,0.62,0.845
+seasonal,0.15,winter,4,0.17,0.225
+seasonal,0.15,winter,5,0.04,0.055
+seasonal,0.15,winter,6,0.015,0.015
+seasonal,0.15,winter,7,0,0
+seasonal,0.15,winter,8,0,0
+seasonal,0.15,winter,9,0,0
+seasonal,0.15,winter,10,0,0
+seasonal,wind+pv 0.1,all,1,7.74,10.335
+seasonal,wind+pv 0.1,all,2,2.05,2.595
+seasonal,wind+pv 0.1,all,3,0.375,0.545
+seasonal,wind+pv 0.1,all,4,0.12,0.17
+seasonal,wind+pv 0.1,all,5,0.035,0.05
+seasonal,wind+pv 0.1,all,6,0.015,0.015
+seasonal,wind+pv 0.1,all,7,0,0
+seasonal,wind+pv 0.1,all,8,0,0
+seasonal,wind+pv 0.1,all,9,0,0
+seasonal,wind+pv 0.1,all,10,0,0
+regime,0.1,all,1,18.48,28.17
+regime,0.1,all,2,6.23,9.69
+regime,0.1,all,3,2.18,3.46
+regime,0.1,all,4,0.735,1.28
+regime,0.1,all,5,0.27,0.545
+regime,0.1,all,6,0.12,0.275
+regime,0.1,all,7,0.085,0.155
+regime,0.1,all,8,0.025,0.07
+regime,0.1,all,9,0.025,0.045
+regime,0.1,all,10,0.02,0.02
+regime,0.1,winter,1,6.525,8.61
+regime,0.1,winter,2,1.46,2.085
+regime,0.1,winter,3,0.475,0.625
+regime,0.1,winter,4,0.1,0.15
+regime,0.1,winter,5,0.03,0.05
+regime,0.1,winter,6,0.015,0.02
+regime,0.1,winter,7,0.005,0.005
+regime,0.1,winter,8,0,0
+regime,0.1,winter,9,0,0
+regime,0.1,winter,10,0,0
+regime,0.15,all,1,21.45,43.365
+regime,0.15,all,2,10.395,21.915
+regime,0.15,all,3,5.105,11.52
+regime,0.15,all,4,2.82,6.415
+regime,0.15,all,5,1.515,3.595
+regime,0.15,all,6,0.845,2.08
+regime,0.15,all,7,0.5,1.235
+regime,0.15,all,8,0.345,0.735
+regime,0.15,all,9,0.145,0.39
+regime,0.15,all,10,0.245,0.245
+regime,0.15,winter,1,9.22,16.26
+regime,0.15,winter,2,3.935,7.04
+regime,0.15,winter,3,1.645,3.105
+regime,0.15,winter,4,0.765,1.46
+regime,0.15,winter,5,0.355,0.695
+regime,0.15,winter,6,0.175,0.34
+regime,0.15,winter,7,0.09,0.165
+regime,0.15,winter,8,0.05,0.075
+regime,0.15,winter,9,0.015,0.025
+regime,0.15,winter,10,0.01,0.01
+regime,wind+pv 0.1,all,1,8.195,13.36
+regime,wind+pv 0.1,all,2,2.805,5.165
+regime,wind+pv 0.1,all,3,1.265,2.36
+regime,wind+pv 0.1,all,4,0.565,1.095
+regime,wind+pv 0.1,all,5,0.24,0.53
+regime,wind+pv 0.1,all,6,0.17,0.29
+regime,wind+pv 0.1,all,7,0.065,0.12
+regime,wind+pv 0.1,all,8,0.01,0.055
+regime,wind+pv 0.1,all,9,0.035,0.045
+regime,wind+pv 0.1,all,10,0.01,0.01
+regime_t,0.1,all,1,18.35,28.165
+regime_t,0.1,all,2,6.32,9.815
+regime_t,0.1,all,3,2.11,3.495
+regime_t,0.1,all,4,0.785,1.385
+regime_t,0.1,all,5,0.33,0.6
+regime_t,0.1,all,6,0.12,0.27
+regime_t,0.1,all,7,0.09,0.15
+regime_t,0.1,all,8,0.02,0.06
+regime_t,0.1,all,9,0.02,0.04
+regime_t,0.1,all,10,0.02,0.02
+regime_t,0.1,winter,1,6.545,8.72
+regime_t,0.1,winter,2,1.535,2.175
+regime_t,0.1,winter,3,0.48,0.64
+regime_t,0.1,winter,4,0.105,0.16
+regime_t,0.1,winter,5,0.02,0.055
+regime_t,0.1,winter,6,0.02,0.035
+regime_t,0.1,winter,7,0.01,0.015
+regime_t,0.1,winter,8,0.005,0.005
+regime_t,0.1,winter,9,0,0
+regime_t,0.1,winter,10,0,0
+regime_t,0.15,all,1,21.615,43.445
+regime_t,0.15,all,2,10.35,21.83
+regime_t,0.15,all,3,4.94,11.48
+regime_t,0.15,all,4,2.915,6.54
+regime_t,0.15,all,5,1.5,3.625
+regime_t,0.15,all,6,0.905,2.125
+regime_t,0.15,all,7,0.515,1.22
+regime_t,0.15,all,8,0.3,0.705
+regime_t,0.15,all,9,0.175,0.405
+regime_t,0.15,all,10,0.23,0.23
+regime_t,0.15,winter,1,9.165,16.36
+regime_t,0.15,winter,2,3.985,7.195
+regime_t,0.15,winter,3,1.62,3.21
+regime_t,0.15,winter,4,0.795,1.59
+regime_t,0.15,winter,5,0.395,0.795
+regime_t,0.15,winter,6,0.23,0.4
+regime_t,0.15,winter,7,0.095,0.17
+regime_t,0.15,winter,8,0.045,0.075
+regime_t,0.15,winter,9,0.02,0.03
+regime_t,0.15,winter,10,0.01,0.01
+regime_t,wind+pv 0.1,all,1,8.085,13.39
+regime_t,wind+pv 0.1,all,2,2.86,5.305
+regime_t,wind+pv 0.1,all,3,1.285,2.445
+regime_t,wind+pv 0.1,all,4,0.6,1.16
+regime_t,wind+pv 0.1,all,5,0.28,0.56
+regime_t,wind+pv 0.1,all,6,0.165,0.28
+regime_t,wind+pv 0.1,all,7,0.06,0.115
+regime_t,wind+pv 0.1,all,8,0.02,0.055
+regime_t,wind+pv 0.1,all,9,0.035,0.035
+regime_t,wind+pv 0.1,all,10,0,0

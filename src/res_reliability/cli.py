@@ -5,6 +5,7 @@ Usage:
     python -m res_reliability fetch-load                    # KSE demand from PSE (cached)
     python -m res_reliability run                           # all stages -> results/
     python -m res_reliability run --stages markov elcc --n-sims 500
+    python -m res_reliability run --stages weather storage --jobs 6   # regime models, storage
     python -m res_reliability figures                       # README charts -> docs/img/
     python -m res_reliability dashboard                     # docs/index.html
 """
@@ -18,7 +19,7 @@ from pathlib import Path
 
 from res_reliability import config
 
-STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity"]
+STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity", "weather", "storage"]
 
 
 def _fetch_weather(args: argparse.Namespace) -> int:
@@ -62,6 +63,10 @@ def _run(args: argparse.Namespace) -> int:
                 analyses.elcc_stage(ctx, loads[::-1])
             elif st == "sensitivity":
                 analyses.sensitivity_stage(ctx, "KSE" if "KSE" in loads else "RTS", max(args.n_sims // 4, 100))
+            elif st == "weather":
+                analyses.weather_stage(ctx)
+            elif st == "storage":
+                analyses.storage_stage(ctx, args.n_sims, args.jobs, args.data_dir)
         log.info("stage %s done in %.0f s", st, time.time() - t0)
     try:
         analyses.summary()
@@ -103,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--n-sims", type=int, default=2000, help="Monte Carlo years per variant")
     s.add_argument("--no-kse", action="store_true", help="skip the KSE load profile (RTS-79 only)")
     s.add_argument("--kelmarsh-dir", help="Kelmarsh data folder (default: KELMARSH_DATA_DIR)")
+    s.add_argument("--jobs", type=int, default=1, help="worker processes for the storage stage")
     s.set_defaults(func=_run)
 
     s = sub.add_parser("figures", help="render README charts from results/")

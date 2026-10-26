@@ -117,3 +117,30 @@ def cross_validate(
     out["mean_train_model"] = float(hom.mean())
     out["mean_test_data"] = float(np.nanmean(np.where(flat(test_rows, v), flat(test_rows, x), np.nan)))
     return out
+
+
+def low_runs(daily: np.ndarray, threshold: float) -> np.ndarray:
+    """Lengths (days) of runs of consecutive days below ``threshold`` in every row of a (years, days) matrix.
+
+    Unlike ``sojourns``, runs that touch the start or the end of a year are kept (a year is a closed window).
+    """
+    out = []
+    for row in np.atleast_2d(np.asarray(daily, dtype=float)):
+        low = np.r_[False, row < threshold, False].astype(np.int8)
+        d = np.diff(low)
+        out.append(np.flatnonzero(d == -1) - np.flatnonzero(d == 1))
+    return np.concatenate(out) if out else np.array([], dtype=np.int64)
+
+
+def run_length_counts(lengths: np.ndarray, n_years: float, max_len: int = 10) -> np.ndarray:
+    """Runs per year of length 1, 2, ..., max_len - 1 and >= max_len days."""
+    lengths = np.asarray(lengths, dtype=np.int64)
+    c = np.bincount(np.minimum(lengths, max_len), minlength=max_len + 1)[1:]
+    return c / n_years
+
+
+def rolling_min_mean(daily: np.ndarray, window: int) -> np.ndarray:
+    """Lowest ``window``-day mean in every row (year) of a (years, days) matrix."""
+    x = np.atleast_2d(np.asarray(daily, dtype=float))
+    c = np.cumsum(np.c_[np.zeros(x.shape[0]), x], axis=1)
+    return ((c[:, window:] - c[:, :-window]) / window).min(axis=1)

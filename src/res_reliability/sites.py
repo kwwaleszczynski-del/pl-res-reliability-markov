@@ -91,3 +91,22 @@ def portfolio(sites: list[SiteSeries]) -> SiteSeries:
         np.mean([s.pv_cs for s in sites], axis=0),
         np.mean([s.ws for s in sites], axis=0),
     )
+
+
+def mean_temperature(points: list[Point], years: list[int] = YEARS, data_dir: Path = DATA_DIR) -> np.ndarray:
+    """(n_years, 8760) ERA5 2 m temperature averaged over the grid points, degC (cached)."""
+    path = data_dir / "series" / "mean_t2m.npy"
+    if path.exists():
+        return np.load(path)
+    rows = []
+    for point in points:
+        w = weather.load_point(point, data_dir)
+        w = w[~w.index.duplicated()]
+        t = [w["t2m"].reindex(year_index(y)).interpolate(limit=3, limit_direction="both").to_numpy() for y in years]
+        rows.append(np.vstack(t))
+    out = np.mean(rows, axis=0)
+    if np.isnan(out).any():
+        raise ValueError("gaps in ERA5 temperature")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, out)
+    return out

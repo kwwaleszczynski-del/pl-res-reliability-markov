@@ -22,12 +22,13 @@ log = logging.getLogger(__name__)
 SURFACE = "#fcfcfb"
 INK, INK2, MUTED = "#0b0b0b", "#52514e", "#898781"
 GRID, BASE = "#e1e0d9", "#c3c2b7"
-C1, C2, C3, C4 = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+C1, C2, C3, C4, C5 = "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"
 BLUES = LinearSegmentedColormap.from_list(
     "blues", ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#2a78d6", "#1c5cab", "#104281", "#0d366b"])
-MODEL_COLORS = {"data": C1, "hist": C1, "homogeneous": C2, "seasonal": C3}
+RAMP4 = ["#6da7ec", "#2a78d6", "#1c5cab", "#0d366b"]  # ordered magnitudes (durations, fleet sizes, shares)
+MODEL_COLORS = {"data": C1, "hist": C1, "homogeneous": C2, "seasonal": C3, "regime": C4, "regime_t": C5}
 MODEL_NAMES = {"data": "ERA5 series", "hist": "historical weather", "homogeneous": "Markov, homogeneous",
-               "seasonal": "Markov, monthly"}
+               "seasonal": "Markov, monthly", "regime": "regime switching", "regime_t": "regimes + temperature"}
 MONTHS = list("JFMAMJJASOND")
 
 
@@ -338,11 +339,146 @@ def structural_fig(results_dir=RESULTS_DIR):
     return save(fig, "structural.png")
 
 
+WEATHER_ORDER = ("data", "seasonal", "regime", "regime_t")
+STORAGE_ORDER = ("hist", "seasonal", "regime", "regime_t")
+
+
+def weather_models(results_dir=RESULTS_DIR):
+    m = _load_json("weather_models.json", results_dir)["metrics"]
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 7.2))
+    k = np.arange(1, 11)
+    for ax, key, title in ((axes[0, 0], "0.15:all", "Wind lulls, whole year (daily CF < 15 %)"),
+                           (axes[0, 1], "0.15:winter", "Wind lulls, October-March (daily CF < 15 %)")):
+        for model in WEATHER_ORDER:
+            y = np.array(m[model]["lulls"][key]["at_least_per_year"], dtype=float)
+            ax.plot(k, np.where(y > 0, y, np.nan), color=MODEL_COLORS[model], marker="o", markersize=4,
+                    label=MODEL_NAMES[model])
+        ax.set_yscale("log")
+        ax.set_xticks(k, [str(i) for i in k])
+        ax.set_xlabel("lulls lasting at least ... days")
+        ax.set_ylabel("lulls per year (log)")
+        ax.set_title(title)
+    axes[0, 0].legend(loc="lower left")
+    ax = axes[1, 0]
+    lags = np.arange(len(m["data"]["acf"]))
+    for model in WEATHER_ORDER:
+        ax.plot(lags, m[model]["acf"], color=MODEL_COLORS[model], label=MODEL_NAMES[model])
+    ax.set_xticks([0, 24, 48, 72, 96, 120, 144, 168])
+    ax.set_xlabel("lag, h")
+    ax.set_ylim(0, 1)
+    ax.set_title("Wind: autocorrelation of hourly output over a week")
+    ax = axes[1, 1]
+    x = np.arange(3)
+    wdt = 0.2
+    for i, model in enumerate(WEATHER_ORDER):
+        v = 100 * np.array(m[model]["djf_by_temperature_tercile"]["share_days_below_0.15"])
+        ax.bar(x + (i - 1.5) * wdt, v, width=wdt * 0.9, color=MODEL_COLORS[model], label=MODEL_NAMES[model])
+    ax.set_xticks(x, ["coldest third", "middle third", "warmest third"])
+    ax.set_xlabel("winter days (DJF) by temperature anomaly")
+    ax.set_ylabel("days with wind CF < 15 %, %")
+    ax.set_title("Cold and calm: winter lulls by temperature")
+    ax.grid(axis="x", visible=False)
+    fig.suptitle("Weather models against the ERA5 national wind portfolio (200 synthetic years per model)",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "weather_models.png")
+
+
+def _kwd_lines(ax, kwd, side="right", x=None, below=False):
+    x0, x1 = ax.get_xlim()
+    x = (x1 if side == "right" else x0) if x is None else x
+    for k in kwd:
+        ax.axhline(k["kwd"], color=MUTED, linewidth=1, linestyle=":")
+        ax.text(x, k["kwd"] + (-1.2 if below else 1.2), f"KWD {k['auction'][-4:]}: {k['kwd']:.2f} %", ha=side,
+                va="top" if below else "bottom", fontsize=7.5, color=INK2)
+
+
+def storage_elcc_fig(results_dir=RESULTS_DIR):
+    df = pd.read_csv(results_dir / "storage_elcc.csv")
+    kwd = _load_json("kwd_storage.json", results_dir)["values"]
+    los = df[df["policy"] == "losses"]
+    fig, axes = plt.subplots(1, 3, figsize=(13.8, 4.6), sharey=True)
+    ax = axes[0]
+    d = los[(los["model"] == "hist") & (los["res_share"] == 0.10)]
+    for color, (p, g) in zip(RAMP4, d.groupby("power_pct_peak")):
+        ax.plot(g["duration_h"], g["elcc_pct"], color=color, marker="o", markersize=5, label=f"fleet {p:g} % of peak")
+    ax.set_xscale("log", base=2)
+    ax.set_xticks([1, 2, 4, 8], ["1", "2", "4", "8"])
+    ax.set_xlim(0.85, 9.5)
+    ax.set_ylim(0, 105)
+    ax.set_xlabel("storage duration, h")
+    ax.set_ylabel("ELCC, % of storage power")
+    ax.set_title("Duration and fleet size (10 % wind + 10 % PV)")
+    _kwd_lines(ax, kwd, "left")
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 0.17), fontsize=7.5)
+    ax = axes[1]
+    sw = pd.read_csv(results_dir / "storage_fleet_sweep.csv")
+    sw = sw[sw["model"] == "hist"]
+    for color, (dur, g) in zip(RAMP4[1:], sw.groupby("duration_h")):
+        ax.plot(g["power_pct_peak"], g["marginal_elcc_pct"], color=color, marker="o", markersize=5,
+                label=f"{dur:g} h")
+    gw = _load_json("kwd_storage.json", results_dir)["kse_peak_mw"] / 1000
+    ticks = [0, 10, 20, 30, 40, 50]
+    ax.set_xticks(ticks, [f"{t}\n{t * gw / 100:.1f} GW" for t in ticks])
+    ax.set_xlim(0, 52)
+    ax.set_xlabel("storage fleet, % of peak load (GW at KSE scale)")
+    ax.set_title("Marginal ELCC of a growing fleet (2 x 25 % RES)")
+    _kwd_lines(ax, kwd, "left", x=24, below=True)
+    ax.legend(loc="upper right", fontsize=7.5)
+    ax = axes[2]
+    d = los[(los["duration_h"] == 4) & (los["res_share"] == 0.25)]
+    for model in STORAGE_ORDER:
+        g = d[d["model"] == model]
+        ax.plot(g["power_pct_peak"], g["elcc_pct"], color=MODEL_COLORS[model], marker="o", markersize=5,
+                label=MODEL_NAMES[model])
+    ax.set_xlim(0, 21)
+    ax.set_xticks([1, 5, 10, 20])
+    ax.set_xlabel("4 h storage fleet, % of peak load")
+    ax.set_title("Weather model (25 % wind + 25 % PV)")
+    _kwd_lines(ax, kwd)
+    ax.legend(loc="lower left", fontsize=7.5)
+    fig.suptitle("Capacity value of storage: KSE load, system at LOLE 3 h/yr, round trip 85 %, historical weather "
+                 "unless stated",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "storage_elcc.png")
+
+
+def storage_lulls_fig(results_dir=RESULTS_DIR):
+    df = pd.read_csv(results_dir / "storage_lulls.csv")
+    none = df[df["model"] == "none"].iloc[0]
+    sel = (df["policy"] == "losses") & np.isinf(df["duration_h"])
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.3))
+    for model in STORAGE_ORDER:
+        g = df[sel & (df["model"] == model)]
+        axes[0].plot([0] + list(100 * g["energy_share"]), [none["lole_no_storage"]] + list(g["lole_no_storage"]),
+                     color=MODEL_COLORS[model], marker="o", markersize=5, label=MODEL_NAMES[model])
+        axes[1].plot(100 * g["energy_share"], g["energy_gwh_kse"], color=MODEL_COLORS[model], marker="o",
+                     markersize=5, label=MODEL_NAMES[model])
+        if model in ("hist", "seasonal"):  # the two ends; the table in the README has every value
+            last = g.iloc[-1]
+            axes[1].text(100 * last["energy_share"] + 0.8, last["energy_gwh_kse"], f"{last['energy_gwh_kse']:.0f}",
+                         va="center", fontsize=8, color=INK2)
+    for ax in axes:
+        ax.set_yscale("log")
+        ax.set_xlabel("wind + PV share of annual demand, %")
+    axes[0].set_ylabel("LOLE without storage, h/yr (log)")
+    axes[0].set_title("Demand growth covered by wind and PV energy")
+    axes[0].legend(loc="upper left")
+    axes[1].set_xlim(8, 44)
+    axes[1].set_ylabel("GWh at the scale of the 2024 KSE peak (log)")
+    axes[1].set_title("Storage energy that keeps LOLE at today's level")
+    fig.suptitle("How much storage the lulls need (power not limited, round trip 85 %)",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "storage_lulls.png")
+
+
 def make_all(results_dir=RESULTS_DIR) -> list[Path]:
     style()
     out = []
     for fn in (transition_matrices, seasonality_and_persistence, variants, elcc_map, elcc_curves, lole_vs_share,
-               sensitivity, structural_fig):
+               sensitivity, structural_fig, weather_models, storage_elcc_fig, storage_lulls_fig):
         try:
             out.append(fn(results_dir))
         except FileNotFoundError as exc:

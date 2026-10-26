@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.optimize import brentq
 
-from res_reliability import adequacy, elcc, markov as mk, montecarlo as mc, pse, rts79, sites, weather
+from res_reliability import adequacy, elcc, markov as mk, montecarlo as mc, pse, regimes as rgm, rts79, sites, weather
 from res_reliability.config import DATA_DIR, HOURS, PL_RELIABILITY_STANDARD_LOLE, YEARS
 
 log = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ class Context:
     copt: adequacy.Copt
     loads: dict[str, LoadCase]
     kse_shape: np.ndarray | None = None
+    t2m: np.ndarray | None = None  # (n_years, 8760) mean ERA5 temperature of the grid points
     extra: dict = field(default_factory=dict)
 
 
@@ -89,7 +90,8 @@ def build(data_dir=DATA_DIR, with_kse: bool = True) -> Context:
         loads["KSE2850"] = LoadCase("KSE2850", shape * rts79.PEAK_LOAD_MW,
                                     "PSE KSE demand scaled to the RTS-79 peak of 2850 MW (thesis scaling)")
     log.info("%d grid points, portfolio wind CF %.3f, PV CF %.3f", len(ss), pf.wind.mean(), pf.pv.mean())
-    return Context(ss, pf, sites.study_months(), copt, loads, shape)
+    t2m = sites.mean_temperature(pts, data_dir=data_dir)
+    return Context(ss, pf, sites.study_months(), copt, loads, shape, t2m)
 
 
 # --- RES models -------------------------------------------------------------------------
@@ -128,11 +130,35 @@ def dist_pv(ctx: Context, s: sites.SiteSeries, cap: float, model: str, n_hours: 
     return elcc.from_markov(mdl, ctx.months, cap, pv_envelope(s), s.pv.shape[0], n_hours)
 
 
+REGIME_MODELS = ("regime", "regime_t")  # regime switching; "_t": conditioned on the temperature anomaly
+
+
+def regime_weather(ctx: Context, model: str, **fit_kw) -> rgm.RegimeWeather:
+    """Regime model of the national portfolio (cached on the context for the default settings)."""
+    key = f"weather:{model}"
+    if fit_kw or key not in ctx.extra:
+        w = rgm.fit_weather(ctx.portfolio.wind, ctx.portfolio.pv_k, ctx.portfolio.daylight, ctx.months,
+                            temperature=ctx.t2m if model == "regime_t" else None, **fit_kw)
+        if fit_kw:
+            return w
+        ctx.extra[key] = w
+    return ctx.extra[key]
+
+
 def production(ctx: Context, s: sites.SiteSeries, tech: str, model: str, n_states: int = 5,
                level_kind: str = "mean") -> mc.Production:
-    """Monte Carlo production model of a site for ``tech`` in {"wind", "pv"}."""
+    """Monte Carlo production model of a site for ``tech`` in {"wind", "pv"}.
+
+    Regime models are fitted on the national portfolio; their plants need the shared regime process in the
+    system specification (``system_spec(..., weather=regime_weather(ctx, model))``).
+    """
     if model == "hist":
         return mc.HistoricalProduction(s.wind if tech == "wind" else s.pv)
+    if model in REGIME_MODELS:
+        w = regime_weather(ctx, model)
+        if tech == "wind":
+            return mc.RegimeProduction(w, "wind")
+        return mc.RegimeProduction(w, "pv", envelope=pv_envelope(s), active=s.daylight)
     seasonal = model == "seasonal"
     if tech == "wind":
         mdl = fit_wind(s, ctx.months, n_states, seasonal, level_kind)
@@ -141,10 +167,13 @@ def production(ctx: Context, s: sites.SiteSeries, tech: str, model: str, n_state
     return mc.MarkovProduction(mdl, ctx.months, envelope=pv_envelope(s), active=s.daylight)
 
 
-def system_spec(ctx: Context, load: LoadCase, res: list[mc.ResPlant]) -> mc.SystemSpec:
+def system_spec(ctx: Context, load: LoadCase, res: list[mc.ResPlant], weather: rgm.RegimeWeather | None = None,
+                storage=None) -> mc.SystemSpec:
     cap, mttf, mttr = conv_arrays()
+    if weather is None:
+        weather = next((p.production.weather for p in res if isinstance(p.production, mc.RegimeProduction)), None)
     return mc.SystemSpec(load=load.matrix, conv_capacity=cap, conv_mttf=mttf, conv_mttr=mttr,
-                         res=res, n_weather_years=len(YEARS))
+                         res=res, n_weather_years=len(YEARS), weather=weather, storage=storage)
 
 
 def hours_of(load: LoadCase) -> int:

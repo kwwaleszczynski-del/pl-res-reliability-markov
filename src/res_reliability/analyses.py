@@ -2,19 +2,23 @@
 
 Usage:
     python -m res_reliability run --stages markov structural variants elcc sensitivity
+    python -m res_reliability run --stages weather storage --jobs 6
 """
 
 from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import brentq
 
-from res_reliability import config, elcc, markov as mk, montecarlo as mc, sites, structural, study, validation
-from res_reliability.config import LIT_PV, LIT_WIND, RESULTS_DIR, YEARS
+from res_reliability import config, elcc, markov as mk, montecarlo as mc, regimes as rgm, sites, storage as sto
+from res_reliability import structural, study, validation
+from res_reliability.config import HOURS, LIT_PV, LIT_WIND, RESULTS_DIR, YEARS
 
 log = logging.getLogger(__name__)
 
@@ -400,6 +404,40 @@ def summary(results_dir: Path = RESULTS_DIR) -> dict:
     out["sensitivity_wind_speed"] = ws.round(3).to_dict("records")
     fr = pd.read_csv(results_dir / "sensitivity_for.csv")
     out["sensitivity_for"] = fr[fr["for"].isin([0.0, 0.05, 0.1])].round(3).to_dict("records")
+    if (results_dir / "weather_models.json").exists():
+        w = j("weather_models.json")
+        out["weather_models"] = {
+            m: {"lulls_ge5d_0.15_per_year": v["lulls"]["0.15:all"]["at_least_per_year"][4],
+                "winter_lulls_ge5d_0.15_per_year": v["lulls"]["0.15:winter"]["at_least_per_year"][4],
+                "lulls_ge3d_0.1_per_year": v["lulls"]["0.1:all"]["at_least_per_year"][2],
+                "wind_pv_lulls_ge3d_0.1_per_year": v["lulls"]["wind+pv 0.1:all"]["at_least_per_year"][2],
+                "longest_lull_0.15_mean_d": round(v["longest_lull_0.15"]["mean"], 2),
+                "spells_ge48h_per_year": round(v["hourly_low_spells_per_year"][">=48h"], 2),
+                "acf24": v["acf"][24], "acf72": v["acf"][72], "acf168": v["acf"][168],
+                "min_7d_wind": round(v["min_7d_wind"], 4), "min_7d_wind_pv": round(v["min_7d_wind_pv"], 4),
+                "wind_top100_load_hours": round(v.get("wind_top100_load_hours", float("nan")), 4),
+                "djf_below_0.15_by_tercile": [round(x, 3) for x in v["djf_by_temperature_tercile"]["share_days_below_0.15"]]}
+            for m, v in w["metrics"].items()}
+        out["elcc_no_storage"] = {f"{r['model']}:{r['mix']}": round(r["elcc_pct"], 2) for r in w.get("elcc_no_storage", [])}
+        out["spatial"] = w["spatial"]
+        out["regime_model"] = w["regime_model"]
+    if (results_dir / "storage_elcc.csv").exists():
+        s = pd.read_csv(results_dir / "storage_elcc.csv")
+        out["storage_elcc_losses"] = {f"{r.model}:{r.res_share:g}:{r.duration_h:g}h:{r.power_pct_peak:g}%":
+                                      [round(r.elcc_pct, 1), round(r.marginal_elcc_pct, 1)]
+                                      for r in s[s["policy"] == "losses"].itertuples()}
+        out["storage_base_lole"] = {f"{k[0]}:{k[1]:g}": round(g["base_lole"].iloc[0], 3)
+                                    for k, g in s.groupby(["model", "res_share"])}
+    if (results_dir / "storage_fleet_sweep.csv").exists():
+        s = pd.read_csv(results_dir / "storage_fleet_sweep.csv")
+        out["storage_fleet_sweep"] = {f"{r.model}:{r.duration_h:g}h:{r.power_pct_peak:g}%":
+                                      [round(r.elcc_pct, 1), round(r.marginal_elcc_pct, 1)] for r in s.itertuples()}
+    if (results_dir / "storage_lulls.csv").exists():
+        s = pd.read_csv(results_dir / "storage_lulls.csv")
+        out["storage_lulls_gwh_kse"] = {f"{r.model}:{r.energy_share:g}:{r.policy}:{r.duration_h:g}h":
+                                        round(r.energy_gwh_kse, 1) for r in s.itertuples()}
+        out["lole_without_storage"] = {f"{r.model}:{r.energy_share:g}": round(r.lole_no_storage, 2)
+                                       for r in s.drop_duplicates(["model", "energy_share"]).itertuples()}
     save_json("summary.json", out, results_dir)
     return out
 
@@ -497,3 +535,389 @@ def sensitivity_stage(ctx: study.Context, lname: str = "KSE", n_sims: int = 500)
     out["for"] = pd.DataFrame(rows)
     save_csv("sensitivity_for.csv", out["for"])
     return out
+
+
+# --- 6. Weather models with memory: regimes, temperature, multi-day lulls ------------------
+
+WEATHER_MODELS = ("seasonal", "regime", "regime_t")
+LULL_THRESHOLDS = (0.10, 0.15)  # daily mean wind capacity factor of the national portfolio
+LULL_MAX_DAYS = 10
+N_WEATHER_PER_YEAR = 20  # synthetic years per weather year in the validation
+WINTER_MONTHS = (10, 11, 12, 1, 2, 3)
+
+
+def simulate_weather(ctx: study.Context, model: str, n_per_year: int = N_WEATHER_PER_YEAR, seed: int = SEED) -> dict:
+    """Synthetic wind and PV years of the national portfolio with the random streams of ``mc.run``.
+
+    Synthetic year i belongs to weather (and load) year i % n_years. Returns ``wind``, ``pv`` (n, 8760),
+    ``years`` and, for regime models, the daily ``regimes`` (n, 365).
+    """
+    n = n_per_year * len(YEARS)
+    sims = np.arange(n)
+    years = sims % len(YEARS)
+    streams = [mc.year_streams(seed, int(i), 5) for i in sims]
+    regimes = None
+    if model in study.REGIME_MODELS:
+        w = study.regime_weather(ctx, model)
+        regimes = w.regime_paths([mc.weather_stream(seed, int(i)) for i in sims], years)
+    out = {"years": years}
+    for j, tech in enumerate(("wind", "pv")):
+        prod = study.production(ctx, ctx.portfolio, tech, model)
+        rngs = [s[1 + 2 * j] for s in streams]
+        out[tech] = prod.sample(rngs, years, HOURS, regimes) if regimes is not None else prod.sample(rngs, years, HOURS)
+    if regimes is not None:
+        out["regimes"] = regimes[:, study.regime_weather(ctx, model).burn_in_days:]
+    return out
+
+
+def _longest(daily: np.ndarray, threshold: float) -> np.ndarray:
+    return np.array([max(validation.low_runs(row[None], threshold), default=0) for row in daily])
+
+
+def weather_metrics(ctx: study.Context, wind: np.ndarray, pv: np.ndarray, years: np.ndarray) -> dict:
+    """Chronology, lulls and demand coupling of (n, 8760) wind and PV series; ``years`` = load year of each."""
+    n = len(wind)
+    md = rgm.day_months(ctx.months)
+    wd, pdl = rgm.daily_mean(wind), rgm.daily_mean(pv)
+    comb = 0.5 * (wd + pdl)  # equal wind and PV capacity
+    winter = np.isin(md, WINTER_MONTHS)
+    out: dict = {"n_years": n, "lulls": {}}
+    for th in LULL_THRESHOLDS:
+        for season, x in (("all", wd), ("winter", np.where(winter, wd, 1.0))):
+            runs = validation.low_runs(x, th)
+            counts = validation.run_length_counts(runs, n, LULL_MAX_DAYS)
+            out["lulls"][f"{th:g}:{season}"] = {"per_year": _r(counts),
+                                                "at_least_per_year": _r(counts[::-1].cumsum()[::-1])}
+        long_ = _longest(wd, th)
+        out[f"longest_lull_{th:g}"] = {"mean": float(long_.mean()), "p90": float(np.quantile(long_, 0.9)),
+                                       "max": int(long_.max())}
+    runs = validation.low_runs(comb, 0.10)
+    counts = validation.run_length_counts(runs, n, LULL_MAX_DAYS)
+    out["lulls"]["wind+pv 0.1:all"] = {"per_year": _r(counts), "at_least_per_year": _r(counts[::-1].cumsum()[::-1])}
+    soj = validation.sojourns(mk.discretize(wind.reshape(-1), 5), 5)[0]
+    out["hourly_low_spells_per_year"] = {f">={h}h": float((soj >= h).sum() / n) for h in (24, 48, 96)}
+    out["acf"] = _r(validation.acf(wind, 168), 3)
+    out["acf_pv_daily"] = _r(validation.acf(pdl, 10), 3)
+    out["monthly_mean"] = {"wind": _r([wind[:, ctx.months == m].mean() for m in range(1, 13)]),
+                           "pv": _r([pv[:, ctx.months == m].mean() for m in range(1, 13)])}
+    for k in (3, 7):
+        out[f"min_{k}d_wind"] = float(validation.rolling_min_mean(wd, k).mean())
+        out[f"min_{k}d_wind_pv"] = float(validation.rolling_min_mean(comb, k).mean())
+    if "KSE" in ctx.loads:
+        load = ctx.loads["KSE"].matrix
+        top = np.argsort(load, axis=1)[:, -100:]
+        out["wind_top100_load_hours"] = float(np.mean([wind[i, top[y]].mean() for i, y in enumerate(years)]))
+        out["wind_annual_mean"] = float(wind.mean())
+        ld = rgm.daily_mean(load)[years]
+        nov_feb = np.isin(md, (11, 12, 1, 2))
+        out["r_daily_wind_load_nov_feb"] = float(np.corrcoef(wd[:, nov_feb].ravel(), ld[:, nov_feb].ravel())[0, 1])
+    w_t = study.regime_weather(ctx, "regime_t")
+    cov = w_t.cov[years % w_t.cov.shape[0]]
+    djf = np.broadcast_to(rgm.SEASON_OF_MONTH[md - 1] == 0, wd.shape)
+    out["djf_by_temperature_tercile"] = {
+        "mean_wind": [float(wd[djf & (cov == c)].mean()) for c in range(w_t.process.n_cov)],
+        "share_days_below_0.15": [float((wd[djf & (cov == c)] < 0.15).mean()) for c in range(w_t.process.n_cov)]}
+    return out
+
+
+def _sampled_dist(x: np.ndarray, capacity_mw: float, n_years: int) -> elcc.ResDistribution:
+    """Equally likely simulated years per weather year as an hourly RES distribution for the COPT."""
+    n = len(x) // n_years
+    lv = capacity_mw * x[: n * n_years].reshape(n, n_years, -1).transpose(1, 2, 0)
+    return elcc.ResDistribution(lv, np.full(lv.shape, 1.0 / n), capacity_mw)
+
+
+def spatial_check(ctx: study.Context, n_per_year: int = 5, seed: int = SEED) -> dict:
+    """Does a regime path shared by all grid points carry their spatial correlation?
+
+    Every point gets hourly wind chains conditioned on the national regime of the day; the points then move
+    independently given one shared regime path. Compared with independent monthly chains per point and with
+    ERA5: mean correlation of deseasonalised daily capacity factors between points, and the day-to-day spread
+    and lulls of the equal-weight portfolio rebuilt from the points.
+    """
+    w = study.regime_weather(ctx, "regime_t")
+    wd = rgm.daily_mean(ctx.portfolio.wind)
+    reg = np.digitize(wd / rgm.climatology(wd), w.edges)
+    rg_h = np.repeat(reg, 24, axis=1).reshape(-1)
+    m_h = np.tile(ctx.months, len(YEARS))
+    n = n_per_year * len(YEARS)
+    sims = np.arange(n)
+    years = sims % len(YEARS)
+    regs = w.regime_paths([mc.weather_stream(seed, int(i)) for i in sims], years)
+    b = w.burn_in_days * 24
+    series = {"data": [], "regime": [], "independent": []}
+    for j, s in enumerate(ctx.sites):
+        ch = rgm.fit_hourly(s.wind.reshape(-1), m_h, rg_h, w.n_regimes)
+        pw = rgm.RegimeWeather(w.process, ch, w.pv, w.months, w.edges, w.cov, w.burn_in_days)
+        x = pw.hourly("wind", [np.random.default_rng([seed, int(i), j]) for i in sims], regs)[:, b:b + HOURS]
+        ind = study.production(ctx, s, "wind", "seasonal").sample(
+            [np.random.default_rng([seed, int(i), 1000 + j]) for i in sims], years, HOURS)
+        series["data"].append(rgm.daily_mean(s.wind))
+        series["regime"].append(rgm.daily_mean(x))
+        series["independent"].append(rgm.daily_mean(ind))
+    out = {}
+    for key, daily in series.items():
+        a = np.stack([d - rgm.climatology(d) for d in daily])  # (points, years, days)
+        c = np.corrcoef(a.reshape(len(daily), -1))
+        iu = np.triu_indices(len(daily), 1)
+        port = np.mean(daily, axis=0)
+        anom = port - rgm.climatology(port)
+        runs = validation.low_runs(port, 0.15)
+        out[key] = {"mean_pair_corr": float(c[iu].mean()), "portfolio_daily_std": float(anom.std()),
+                    "portfolio_lulls_ge5d_per_year": float((runs >= 5).sum() / len(port))}
+    return out
+
+
+def weather_stage(ctx: study.Context, n_per_year: int = N_WEATHER_PER_YEAR) -> dict:
+    pf = ctx.portfolio
+    w0, w_t = study.regime_weather(ctx, "regime"), study.regime_weather(ctx, "regime_t")
+    wd = rgm.daily_mean(pf.wind)
+    reg = np.digitize(wd / rgm.climatology(wd), w_t.edges)
+    md = rgm.day_months(ctx.months)
+    djf = np.broadcast_to(rgm.SEASON_OF_MONTH[md - 1] == 0, reg.shape)
+    run_len = [validation.low_runs((reg != k).astype(float), 0.5) for k in range(w_t.n_regimes)]
+    out: dict = {
+        "regime_model": {
+            "regime_quantiles": [0.2, 0.5, 0.8], "edges_ratio_to_climatology": _r(w_t.edges),
+            "regimes": ["calm", "below normal", "above normal", "windy"],
+            "covariate": "tercile of the daily mean temperature anomaly within the season (DJF, MAM, JJA, SON)",
+            "max_age_days": w_t.process.max_age, "kappa": 10.0, "burn_in_days": w_t.burn_in_days,
+            "mean_run_days_data": _r([r.mean() for r in run_len], 2),
+            "hazard_calm_djf_by_tercile": _r(w_t.process.hazard[0, 0], 3),
+            "hazard_calm_djf_pooled": _r(w0.process.hazard[0, 0, 0], 3),
+            "hazard_windy_djf_by_tercile": _r(w_t.process.hazard[-1, 0], 3),
+            "regime_freq_djf_by_tercile_data": [
+                _r(np.bincount(reg[djf & (w_t.cov == c)], minlength=w_t.n_regimes) / (djf & (w_t.cov == c)).sum(), 3)
+                for c in range(w_t.process.n_cov)],
+        },
+        "metrics": {"data": weather_metrics(ctx, pf.wind, pf.pv, np.arange(len(YEARS)))},
+    }
+    sims = {}
+    for m in WEATHER_MODELS:
+        sims[m] = simulate_weather(ctx, m, n_per_year)
+        out["metrics"][m] = weather_metrics(ctx, sims[m]["wind"], sims[m]["pv"], sims[m]["years"])
+        log.info("weather %s: lulls >= 5 d below 0.15: %.2f /yr", m,
+                 out["metrics"][m]["lulls"]["0.15:all"]["at_least_per_year"][4])
+    rs = sims["regime_t"]["regimes"]
+    cov = w_t.cov[sims["regime_t"]["years"]]
+    djf_s = np.broadcast_to(rgm.SEASON_OF_MONTH[md - 1] == 0, rs.shape)
+    out["regime_model"]["regime_freq_djf_by_tercile_regime_t"] = [
+        _r(np.bincount(rs[djf_s & (cov == c)], minlength=w_t.n_regimes) / (djf_s & (cov == c)).sum(), 3)
+        for c in range(w_t.process.n_cov)]
+
+    rows = []
+    for key, mt in out["metrics"].items():
+        for name, v in mt["lulls"].items():
+            th, season = name.rsplit(":", 1)
+            for k, val in enumerate(v["per_year"]):
+                rows.append({"model": key, "series": th, "season": season, "days": k + 1, "per_year": val,
+                             "at_least_per_year": v["at_least_per_year"][k]})
+    save_csv("weather_lulls.csv", pd.DataFrame(rows))
+
+    # ELCC without storage (KSE load, 10 % of peak per technology): only the hour-by-hour distribution of RES
+    # output and its alignment with the load matter, so simulated years enter the exact COPT expectation
+    if "KSE" in ctx.loads:
+        load = ctx.loads["KSE"]
+        h, cap = study.hours_of(load), RES_SHARE * load.peak
+        erows = []
+        for m in ("hist",) + WEATHER_MODELS:
+            if m == "hist":
+                dw, dp = elcc.historical(pf.wind, cap, h), elcc.historical(pf.pv, cap, h)
+                dwp = elcc.historical(pf.wind + pf.pv, 2 * cap, h)
+            else:
+                x = sims[m]
+                dw, dp = _sampled_dist(x["wind"], cap, len(YEARS)), _sampled_dist(x["pv"], cap, len(YEARS))
+                dwp = _sampled_dist(x["wind"] + x["pv"], 2 * cap, len(YEARS))
+            for mix, d in (("wind", dw), ("pv", dp), ("wind+pv", dwp)):
+                e = elcc.elcc(ctx.copt, load.matrix, d)
+                erows.append({"model": m, "mix": mix, "capacity_mw": d.capacity_mw,
+                              "elcc_pct": 100 * e / d.capacity_mw, "lole": elcc.lole(ctx.copt, load.matrix, d)})
+            log.info("ELCC without storage, %s: wind %.1f %%", m, erows[-3]["elcc_pct"])
+        out["elcc_no_storage"] = erows
+    out["spatial"] = spatial_check(ctx)
+    save_json("weather_models.json", out)
+    return out
+
+
+# --- 7. Storage: ELCC by duration, fleet size and RES share; storage needed for lulls ---------
+
+STORAGE_MODELS = ("seasonal", "regime", "regime_t", "hist")
+STORAGE_DURATIONS = (1, 2, 4, 8)  # h
+STORAGE_FLEET = (0.01, 0.05, 0.10, 0.20)  # storage power, share of the peak load
+STORAGE_RES = (0.0, 0.10, 0.25, 0.50)  # wind and PV capacity each, share of the peak load
+POLICIES = {
+    "ideal": {"efficiency": 1.0, "soc0": 1.0, "charge_from": "any"},
+    "losses": {"efficiency": 0.85, "soc0": 0.5, "charge_from": "any"},
+    "colocated": {"efficiency": 0.85, "soc0": 0.5, "charge_from": "res"},
+}
+LULL_SHARES = (0.0, 0.1, 0.2, 0.3, 0.4)  # wind + PV share of annual demand
+LULL_DURATIONS = (4.0, 8.0, 24.0, float("inf"))  # inf: power not limited
+LULL_WARMUP_H = 720
+KWD_STORAGE = [  # capacity-market derating factor of batteries (one value for every duration), %
+    {"auction": "main auction, delivery 2028", "source": "Dz.U. 2023 poz. 1561, par. 10 pkt 9", "kwd": 95.00},
+    {"auction": "main auction, delivery 2029", "source": "Dz.U. 2024 poz. 1154, par. 10 pkt 9", "kwd": 61.30},
+    {"auction": "main auction, delivery 2030",
+     "source": "Dz.U. 2025 poz. 1066, par. 10 pkt 9 (one group with pumped storage)", "kwd": 13.39},
+]
+
+_WORKER: dict = {}
+
+
+def _ctx(data_dir) -> study.Context:
+    if "ctx" not in _WORKER:
+        _WORKER["ctx"] = study.build(data_dir)
+    return _WORKER["ctx"]
+
+
+def _map(fn, tasks: list[tuple], jobs: int) -> list:
+    if jobs <= 1:
+        return [fn(*t) for t in tasks]
+    with ProcessPoolExecutor(jobs) as ex:
+        return list(ex.map(fn, *zip(*tasks)))
+
+
+def _res_plants(ctx: study.Context, model: str, wind_mw: float, pv_mw: float, params: dict) -> list[mc.ResPlant]:
+    plants = []
+    for tech, cap in (("wind", wind_mw), ("pv", pv_mw)):
+        if cap > 0:
+            p = params["data"][tech]
+            plants.append(mc.ResPlant(tech, cap, study.production(ctx, ctx.portfolio, tech, model),
+                                      mc.Structural(p["for"], p["mttr_h"], N_UNITS)))
+    return plants
+
+
+def _load_factor(ctx: study.Context, share: float) -> float:
+    """Factor on the KSE load that brings LOLE with ``share`` of wind and PV (historical weather) back to 3 h."""
+    load = ctx.loads["KSE"]
+    if share <= 0:
+        return 1.0
+    cap, h = share * load.peak, study.hours_of(load)
+    d = elcc.historical(ctx.portfolio.wind, cap, h) + elcc.historical(ctx.portfolio.pv, cap, h)
+    f = lambda k: elcc.lole(ctx.copt, k * load.matrix, d) - config.PL_RELIABILITY_STANDARD_LOLE  # noqa: E731
+    return float(brentq(f, 1.0, 2.0, xtol=1e-4))
+
+
+def _storage_elcc_task(model: str, share: float, n_sims: int, data_dir) -> list[dict]:
+    ctx = _ctx(data_dir)
+    load = ctx.loads["KSE"]
+    params = structural_params()
+    k = _load_factor(ctx, share)
+    plants = _res_plants(ctx, model, share * load.peak, share * load.peak, params)
+    lc = study.LoadCase("KSE", k * load.matrix, "")
+    r = mc.run(study.system_spec(ctx, lc, plants), n_sims, SEED, keep_margin=True, keep_res=share > 0)
+    base = r.summary()
+    P = np.repeat(STORAGE_FLEET, len(STORAGE_DURATIONS)) * load.peak
+    D = np.tile(STORAGE_DURATIONS, len(STORAGE_FLEET)).astype(float)
+    rows = []
+    for pol, pp in POLICIES.items():
+        if pp["charge_from"] == "res" and share <= 0:
+            continue
+        cap = r.res if pp["charge_from"] == "res" else None
+        e = np.empty(len(P))
+        for p in np.unique(P):  # one power level at a time: fewer relevant years, more skipped hours
+            sel = P == p
+            e[sel] = sto.elcc(r.margin, P[sel], P[sel] * D[sel], pp["efficiency"], pp["soc0"], cap)
+        for pw, dur, val in zip(P, D, e):
+            rows.append({"model": model if share > 0 else "none", "res_share": share, "load_factor": k,
+                         "policy": pol, "duration_h": dur, "power_pct_peak": 100 * pw / load.peak, "power_mw": pw,
+                         "elcc_mw": val, "elcc_pct": 100 * val / pw, "base_lole": base["lole"],
+                         "base_lole_ci95": base["lole_ci95"], "base_lold_h": base["lold_h"]})
+    log.info("storage ELCC %s, RES %.0f %% x2: done (base LOLE %.2f h)", model, 100 * share, base["lole"])
+    return rows
+
+
+SWEEP_FLEET = (0.01, 0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50)
+SWEEP_DURATIONS = (2, 4, 8)
+SWEEP_RES = 0.25
+
+
+def _fleet_sweep_task(model: str, n_sims: int, data_dir) -> list[dict]:
+    """ELCC of ever larger storage fleets (2 x 25 % wind and PV, round trip 85 %), for the comparison with KWD."""
+    ctx = _ctx(data_dir)
+    load = ctx.loads["KSE"]
+    k = _load_factor(ctx, SWEEP_RES)
+    plants = _res_plants(ctx, model, SWEEP_RES * load.peak, SWEEP_RES * load.peak, structural_params())
+    lc = study.LoadCase("KSE", k * load.matrix, "")
+    r = mc.run(study.system_spec(ctx, lc, plants), n_sims, SEED, keep_margin=True)
+    pp = POLICIES["losses"]
+    rows = []
+    for f in SWEEP_FLEET:
+        p = f * load.peak
+        d = np.array(SWEEP_DURATIONS, dtype=float)
+        e = sto.elcc(r.margin, np.full(len(d), p), p * d, pp["efficiency"], pp["soc0"])
+        rows += [{"model": model, "res_share": SWEEP_RES, "policy": "losses", "duration_h": dur,
+                  "power_pct_peak": 100 * f, "power_mw": p, "elcc_mw": val, "elcc_pct": 100 * val / p}
+                 for dur, val in zip(d, e)]
+    log.info("fleet sweep %s done", model)
+    return rows
+
+
+def fleet_sweep(ctx: study.Context, n_sims: int = 2000, jobs: int = 1, data_dir=config.DATA_DIR) -> pd.DataFrame:
+    _WORKER["ctx"] = ctx
+    rows = [r for rr in _map(_fleet_sweep_task, [(m, n_sims, data_dir) for m in ("hist", "regime_t", "seasonal")],
+                             jobs) for r in rr]
+    df = pd.DataFrame(rows).sort_values(["model", "duration_h", "power_mw"])
+    prev = df.groupby(["model", "duration_h"])[["elcc_mw", "power_mw"]].shift(1).fillna(0.0)
+    df["marginal_elcc_pct"] = 100 * (df["elcc_mw"] - prev["elcc_mw"]) / (df["power_mw"] - prev["power_mw"])
+    lp = json.loads((RESULTS_DIR / "load_profiles.json").read_text(encoding="utf-8"))
+    df["power_gw_kse"] = df["power_pct_peak"] / 100 * float(lp["years"][-1]["peak_mw"]) / 1000
+    save_csv("storage_fleet_sweep.csv", df)
+    return df
+
+
+def _lull_task(model: str, share: float, target: float, n_sims: int, data_dir) -> list[dict]:
+    """Storage energy that keeps LOLE at ``target`` when demand grows and wind + PV cover the growth."""
+    ctx = _ctx(data_dir)
+    load = ctx.loads["KSE"]
+    params = structural_params()
+    growth = share / (1 - share)
+    cap = growth * load.matrix.mean() / (ctx.portfolio.wind.mean() + ctx.portfolio.pv.mean())
+    plants = _res_plants(ctx, model, cap, cap, params)
+    lc = study.LoadCase("KSE", (1 + growth) * load.matrix, "")
+    r = mc.run(study.system_spec(ctx, lc, plants), n_sims, SEED, keep_margin=True)
+    s = r.summary()
+    durs = np.array(LULL_DURATIONS * 2)
+    pols = ["ideal"] * len(LULL_DURATIONS) + ["losses"] * len(LULL_DURATIONS)
+    eff = np.array([POLICIES[p]["efficiency"] for p in pols])
+    e = sto.energy_needed(r.margin, target, durs, eff, 1.0, LULL_WARMUP_H, e_min=1.0, e_max=5e5, iters=13)
+    rows = []
+    for dur, pol, val in zip(durs, pols, e):
+        rows.append({"model": model if share > 0 else "none", "energy_share": share, "growth": growth,
+                     "wind_mw": cap, "pv_mw": cap, "load_peak_mw": (1 + growth) * load.peak,
+                     "lole_no_storage": s["lole"], "eens_no_storage": s["eens"], "lole_target": target,
+                     "duration_h": dur, "policy": pol, "energy_mwh": val,
+                     "power_mw": val / dur if np.isfinite(dur) else np.nan})
+    log.info("lull storage %s, share %.0f %%: LOLE %.1f h without storage", model, 100 * share, s["lole"])
+    return rows
+
+
+def storage_stage(ctx: study.Context, n_sims: int = 2000, jobs: int = 1, data_dir=config.DATA_DIR) -> dict:
+    if "KSE" not in ctx.loads:
+        raise RuntimeError("the storage stage needs the KSE load")
+    _WORKER["ctx"] = ctx
+    tasks = [("-", 0.0, n_sims, data_dir)] + [(m, s, n_sims, data_dir) for s in STORAGE_RES if s > 0
+                                               for m in STORAGE_MODELS]
+    rows = [r for rr in _map(_storage_elcc_task, tasks, jobs) for r in rr]
+    df = pd.DataFrame(rows).sort_values(["model", "res_share", "policy", "duration_h", "power_mw"])
+    # incremental ELCC of each block of storage over the fleet below it
+    prev = df.groupby(["model", "res_share", "policy", "duration_h"])[["elcc_mw", "power_mw"]].shift(1).fillna(0.0)
+    df["marginal_elcc_pct"] = 100 * (df["elcc_mw"] - prev["elcc_mw"]) / (df["power_mw"] - prev["power_mw"])
+    save_csv("storage_elcc.csv", df)
+    fleet_sweep(ctx, n_sims, jobs, data_dir)
+
+    base = mc.run(study.system_spec(ctx, ctx.loads["KSE"], []), n_sims, SEED)
+    target = float(base.lole.mean())
+    tasks = [("-", 0.0, target, n_sims, data_dir)] + [(m, s, target, n_sims, data_dir) for s in LULL_SHARES
+                                                       if s > 0 for m in STORAGE_MODELS]
+    ldf = pd.DataFrame([r for rr in _map(_lull_task, tasks, jobs) for r in rr])
+    lp = json.loads((RESULTS_DIR / "load_profiles.json").read_text(encoding="utf-8"))
+    kse_peak = float(lp["years"][-1]["peak_mw"])
+    ldf["energy_h_of_peak"] = ldf["energy_mwh"] / ctx.loads["KSE"].peak
+    ldf["energy_gwh_kse"] = ldf["energy_h_of_peak"] * kse_peak / 1000
+    save_csv("storage_lulls.csv", ldf)
+    save_json("kwd_storage.json", {"values": KWD_STORAGE, "kse_peak_mw": kse_peak, "kse_peak_year": YEARS[-1],
+                                   "model_peak_mw": ctx.loads["KSE"].peak,
+                                   "note": "Capacity-market derating factors (KWD) of batteries, flywheels and "
+                                   "supercapacitors in the main auctions; one value for every storage duration. "
+                                   "Set yearly by regulation; verify the current regulation before use."})
+    return {"elcc": df, "lulls": ldf}

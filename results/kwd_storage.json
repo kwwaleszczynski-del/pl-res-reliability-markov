@@ -1,0 +1,23 @@
+{
+ "values": [
+  {
+   "auction": "main auction, delivery 2028",
+   "source": "Dz.U. 2023 poz. 1561, par. 10 pkt 9",
+   "kwd": 95.0
+  },
+  {
+   "auction": "main auction, delivery 2029",
+   "source": "Dz.U. 2024 poz. 1154, par. 10 pkt 9",
+   "kwd": 61.3
+  },
+  {
+   "auction": "main auction, delivery 2030",
+   "source": "Dz.U. 2025 poz. 1066, par. 10 pkt 9 (one group with pumped storage)",
+   "kwd": 13.39
+  }
+ ],
+ "kse_peak_mw": 28303.875,
+ "kse_peak_year": 2024,
+ "model_peak_mw": 2504.841262584803,
+ "note": "Capacity-market derating factors (KWD) of batteries, flywheels and supercapacitors in the main auctions; one value for every storage duration. Set yearly by regulation; verify the current regulation before use."
+}

@@ -8,8 +8,10 @@ year by year.
 
 Conventional units are two-state Markov processes with exponential up and down times
 (MTTF, MTTR), initialised from their stationary probabilities. RES output comes from a
-production model (Markov chain or a historical weather year) times the share of RES units
-that are technically available (structural reliability).
+production model (Markov chain, regime model or a historical weather year) times the share of
+RES units that are technically available (structural reliability). A regime model draws one
+daily regime path per simulated year from its own stream, shared by all RES plants. Storage,
+if present, operates on the resulting margins (``storage``).
 """
 
 from __future__ import annotations
@@ -20,13 +22,21 @@ from typing import Protocol
 import numpy as np
 
 from res_reliability import markov as mk
+from res_reliability import regimes as rgm
+from res_reliability import storage as sto
 
 CONV_STREAM = 0
+WEATHER_STREAM = 999  # fixed child index: the regime path does not depend on how many plants there are
 
 
 def year_streams(seed: int, sim: int, n_streams: int) -> list[np.random.Generator]:
     ss = np.random.SeedSequence(seed, spawn_key=(sim,))
     return [np.random.default_rng(s) for s in ss.spawn(n_streams)]
+
+
+def weather_stream(seed: int, sim: int) -> np.random.Generator:
+    """Child ``WEATHER_STREAM`` of the year's seed sequence (same as spawning that many children)."""
+    return np.random.default_rng(np.random.SeedSequence(seed, spawn_key=(sim, WEATHER_STREAM)))
 
 
 def two_state_availability(
@@ -144,6 +154,39 @@ class HistoricalProduction:
 
 
 @dataclass
+class RegimeProduction:
+    """Output of one technology of a regime model, driven by the year's shared regime path.
+
+    Wind: capacity factor. PV: clear-sky index x ``envelope`` (clear-sky output of the weather year), moving
+    only on ``active`` (daylight) hours. ``envelope`` and ``active`` are (n_years, 8760); the burn-in uses the
+    end of the previous weather year.
+    """
+
+    weather: rgm.RegimeWeather
+    tech: str  # "wind" or "pv"
+    envelope: np.ndarray | None = None
+    active: np.ndarray | None = None
+    needs_regimes = True
+
+    def sample(self, rngs, years, n_hours, regimes=None):
+        if regimes is None:
+            raise ValueError("RegimeProduction needs the shared regime paths (SystemSpec.weather)")
+        b = self.weather.burn_in_days * 24
+        classes = self.weather.hourly_classes(regimes, years)
+        if self.active is None:
+            x = self.weather.hourly(self.tech, rngs, classes)
+            return np.clip(x[:, b:b + n_hours], 0.0, 1.0)
+        out = np.empty((len(rngs), n_hours))
+        ny = self.active.shape[0]
+        for y in np.unique(years % ny):
+            g = np.flatnonzero(years % ny == y)
+            act = np.r_[self.active[(y - 1) % ny, -b:], self.active[y]]
+            x = self.weather.hourly(self.tech, [rngs[i] for i in g], classes[g], act)[:, b:b + n_hours]
+            out[g] = np.where(self.active[y, :n_hours], x * self.envelope[y, :n_hours], 0.0)
+        return np.clip(out, 0.0, 1.0)
+
+
+@dataclass
 class ResPlant:
     name: str
     capacity_mw: float
@@ -159,6 +202,8 @@ class SystemSpec:
     conv_mttr: np.ndarray
     res: list[ResPlant] = field(default_factory=list)
     n_weather_years: int = 1
+    weather: rgm.RegimeWeather | None = None  # shared regime process of RegimeProduction plants
+    storage: sto.Storage | None = None
 
 
 @dataclass
@@ -166,7 +211,8 @@ class McResult:
     lole: np.ndarray  # per simulated year
     eens: np.ndarray
     lolf: np.ndarray  # loss-of-load events per year
-    margin: np.ndarray | None = None  # (n_sims, n_hours) float32 available - load
+    margin: np.ndarray | None = None  # (n_sims, n_hours) float32 available - load (before storage)
+    res: np.ndarray | None = None  # (n_sims, n_hours) float32 total RES output, MW
 
     def summary(self) -> dict:
         n = len(self.lole)
@@ -181,37 +227,63 @@ class McResult:
         return out
 
 
-def run(spec: SystemSpec, n_sims: int, seed: int = 0, chunk: int = 250, keep_margin: bool = False) -> McResult:
-    """Simulate ``n_sims`` years. Year ``i`` uses weather/load year ``i % n_weather_years``."""
+def run(spec: SystemSpec, n_sims: int, seed: int = 0, chunk: int = 250, keep_margin: bool = False,
+        keep_res: bool = False) -> McResult:
+    """Simulate ``n_sims`` years. Year ``i`` uses weather/load year ``i % n_weather_years``.
+
+    With ``spec.storage`` the indices are those after storage; ``margin`` is always the margin before it.
+    """
     load = np.atleast_2d(spec.load)
     n_hours = load.shape[1]
     n_streams = 1 + 2 * len(spec.res)
-    lole, eens, lolf, margins = [], [], [], []
+    st = spec.storage
+    lole, eens, lolf, margins, res_out = [], [], [], [], []
     for lo in range(0, n_sims, chunk):
         sims = np.arange(lo, min(lo + chunk, n_sims))
         streams = [year_streams(seed, int(i), n_streams) for i in sims]
         years = sims % max(spec.n_weather_years, 1)
+        regimes = None
+        if spec.weather is not None:
+            regimes = spec.weather.regime_paths([weather_stream(seed, int(i)) for i in sims], years)
         gen = np.vstack([
             two_state_availability(s[CONV_STREAM], spec.conv_capacity, spec.conv_mttf, spec.conv_mttr, n_hours)
             for s in streams
         ])
+        need_res = keep_res or (st is not None and st.charge_from == "res")
+        res_gen = np.zeros_like(gen) if need_res else None
         for j, plant in enumerate(spec.res):
-            prod = plant.production.sample([s[1 + 2 * j] for s in streams], years, n_hours)
+            rngs = [s[1 + 2 * j] for s in streams]
+            if getattr(plant.production, "needs_regimes", False):
+                prod = plant.production.sample(rngs, years, n_hours, regimes)
+            else:
+                prod = plant.production.sample(rngs, years, n_hours)
             if plant.structural is not None:
                 avail = np.vstack([plant.structural.sample(s[2 + 2 * j], n_hours) for s in streams])
                 prod = prod * avail
             gen += plant.capacity_mw * prod
+            if need_res:
+                res_gen += plant.capacity_mw * prod
         m = gen - load[years % load.shape[0]]
-        short = m < 0
-        lole.append(short.sum(axis=1))
-        eens.append(np.where(short, -m, 0.0).sum(axis=1))
-        starts = short[:, 1:] & ~short[:, :-1]
-        lolf.append(starts.sum(axis=1) + short[:, 0])
+        if st is None:
+            short = m < 0
+            lole.append(short.sum(axis=1))
+            eens.append(np.where(short, -m, 0.0).sum(axis=1))
+            starts = short[:, 1:] & ~short[:, :-1]
+            lolf.append(starts.sum(axis=1) + short[:, 0])
+        else:
+            r = sto.dispatch(m, st.power_mw, st.energy_mwh, st.efficiency, st.soc0,
+                             charge_cap=res_gen if st.charge_from == "res" else None, warmup_h=st.warmup_h)
+            lole.append(r["lole"][0])
+            eens.append(r["eens"][0])
+            lolf.append(r["lolf"][0])
         if keep_margin:
             margins.append(m.astype(np.float32))
+        if keep_res:
+            res_out.append(res_gen.astype(np.float32))
     return McResult(
         np.concatenate(lole).astype(float),
         np.concatenate(eens),
         np.concatenate(lolf).astype(float),
         np.vstack(margins) if keep_margin else None,
+        np.vstack(res_out) if keep_res else None,
     )
