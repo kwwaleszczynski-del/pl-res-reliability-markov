@@ -565,7 +565,8 @@ Ten weather years are a small sample and the regime model is fitted on them, so 
   Open-Meteo.com Weather API, doi:10.5281/zenodo.7970649), CC BY 4.0.
 - **Polish power system demand:** PSE S.A., hourly "Krajowe zapotrzebowanie na moc" from the legacy CSV export
   on pse.pl (2015 to 2024-06-13) and report `kse-load` of <https://api.raporty.pse.pl> (15-minute actual load,
-  averaged to hours, from 2024-06-14, the first day on the new platform). Public data of the Polish TSO; no
+  averaged to hours, from 2024-06-14, the first day on the new platform), both read with
+  [pse-opendata](https://pypi.org/project/pse-opendata/). Public data of the Polish TSO; no
   explicit open-data licence is stated. Cross-checked with the actual total load for Poland in 2023 from the
   ENTSO-E Transparency Platform.
 - **IEEE RTS-79:** IEEE Subcommittee on the Application of Probability Methods (1979), IEEE Reliability Test

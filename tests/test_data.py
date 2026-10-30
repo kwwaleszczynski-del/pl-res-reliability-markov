@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pse_opendata
 import pytest
 
 from res_reliability import power, pse, structural, validation, weather
@@ -7,15 +8,43 @@ from res_reliability import markov as mk
 from res_reliability.geo import GRID, fetch_order, poland_outline
 
 
-def legacy_csv(rows):
+class FakeResponse:
+    def __init__(self, payload=None, content=b""):
+        self.status_code, self.headers, self.reason = 200, {}, "OK"
+        self.payload, self.content = payload, content
+
+    def json(self):
+        return self.payload
+
+
+class FakeSession:
+    """Answers the legacy export with ``csv`` and the reports API with ``records`` (no network)."""
+
+    def __init__(self, csv="", records=()):
+        self.csv, self.records = csv, list(records)
+
+    def get(self, url, params=None, timeout=None, headers=None):
+        if "getcsv" in url:
+            return FakeResponse(content=self.csv.encode("cp1250"))
+        return FakeResponse({"value": self.records})
+
+
+def client(tmp_path, **kw):
+    return pse_opendata.Client(session=FakeSession(**kw), cache_dir=tmp_path, sleep=lambda s: None, min_interval=0,
+                               legacy_min_interval=0)
+
+
+def legacy(rows, tmp_path):
     head = "Data;Godzina;Krajowe zapotrzebowanie na moc;Sumaryczna generacja JWCD\n"
-    return head + "".join(f"{d};{h};{v};1\n" for d, h, v in rows)
+    csv = head + "".join(f"{d};{h};{v};1\n" for d, h, v in rows)
+    day = pd.Timestamp(rows[0][0])
+    return pse.fetch_legacy(day, day + pd.offsets.MonthEnd(0), client(tmp_path, csv=csv))
 
 
-def test_legacy_pse_autumn_dst_day_has_25_hours():
+def test_legacy_pse_autumn_dst_day_has_25_hours(tmp_path):
     hours = ["1", "2", "2A", *[str(h) for h in range(3, 25)]]
     rows = [("2015-10-25", h, f"{1000 + i},5") for i, h in enumerate(hours)]
-    s = pse.parse_legacy_csv(legacy_csv(rows))
+    s = legacy(rows, tmp_path)
     assert len(s) == 25
     assert str(s.index[0]) == "2015-10-24 22:00:00+00:00"  # 00:00 CEST
     assert str(s.index[-1]) == "2015-10-25 22:00:00+00:00"  # 23:00 CET
@@ -23,29 +52,29 @@ def test_legacy_pse_autumn_dst_day_has_25_hours():
     assert s.index.is_monotonic_increasing and s.index.is_unique
 
 
-def test_legacy_pse_spring_dst_day_has_23_hours():
+def test_legacy_pse_spring_dst_day_has_23_hours(tmp_path):
     hours = ["1", *[str(h) for h in range(3, 25)]]
     rows = [("2015-03-29", h, "1000,0") for h in hours] + [("2015-03-30", "1", "999,0")]
-    s = pse.parse_legacy_csv(legacy_csv(rows))
+    s = legacy(rows, tmp_path)
     assert len(s) == 24
     assert str(s.index[0]) == "2015-03-28 23:00:00+00:00"
     assert str(s.index[22]) == "2015-03-29 21:00:00+00:00"
     assert str(s.index[23]) == "2015-03-29 22:00:00+00:00"  # next day 00:00 CEST
 
 
-def test_legacy_pse_missing_hour_does_not_shift_the_day():
+def test_legacy_pse_missing_hour_does_not_shift_the_day(tmp_path):
     rows = [("2018-02-22", str(h), f"{h},0") for h in range(1, 25) if h not in (5, 6)]
-    s = pse.parse_legacy_csv(legacy_csv(rows))
+    s = legacy(rows, tmp_path)
     assert len(s) == 22
     # hour 7 (06:00-07:00 CET) starts at 05:00 UTC whatever is missing before it
     assert s[pd.Timestamp("2018-02-22 05:00", tz="UTC")] == pytest.approx(7.0)
     assert pd.Timestamp("2018-02-22 03:00", tz="UTC") not in s.index
 
 
-def test_api_quarter_hours_to_hourly_mean():
-    rows = [{"dtime_utc": f"2024-06-14 0{h}:{m:02d}:00", "load_actual": v}
+def test_api_quarter_hours_to_hourly_mean(tmp_path):
+    rows = [{"dtime_utc": f"2024-06-14 0{h}:{m:02d}:00", "business_date": "2024-06-14", "load_actual": v}
             for h, m, v in [(0, 15, 10.0), (0, 30, 20.0), (0, 45, 30.0), (1, 0, 40.0), (1, 15, 50.0)]]
-    s = pse.parse_api_values(rows)
+    s = pse.fetch_api(pse.API_START, pse.API_START, client(tmp_path, records=rows))
     assert str(s.index[0]) == "2024-06-14 00:00:00+00:00"
     assert s.iloc[0] == pytest.approx(25.0)
     assert s.iloc[1] == pytest.approx(50.0)

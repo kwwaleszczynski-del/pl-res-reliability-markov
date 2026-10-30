@@ -19,6 +19,7 @@ dependencies = [
     "matplotlib>=3.8",
     "plotly>=5.20",
     "pvlib>=0.11",
+    "pse-opendata>=0.2,<0.3",
 ]
 
 [project.optional-dependencies]
