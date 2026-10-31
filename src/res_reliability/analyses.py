@@ -33,9 +33,21 @@ KWD = [  # capacity-market availability (derating) factors, onshore wind and sol
 ]
 
 
+def _json_safe(obj):
+    """JSON has no NaN or Infinity: non-finite numbers are written as null."""
+    if isinstance(obj, (float, np.floating)):
+        return float(obj) if np.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    return obj
+
+
 def save_json(name: str, obj, results_dir: Path = RESULTS_DIR) -> None:
     results_dir.mkdir(parents=True, exist_ok=True)
-    (results_dir / name).write_text(json.dumps(obj, indent=1, default=float), encoding="utf-8")
+    text = json.dumps(_json_safe(obj), indent=1, default=float, allow_nan=False)
+    (results_dir / name).write_text(text, encoding="utf-8")
 
 
 def save_csv(name: str, df: pd.DataFrame, results_dir: Path = RESULTS_DIR) -> None:
