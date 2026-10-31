@@ -256,14 +256,17 @@ document.getElementById('yrs').textContent = D.years[0] + '-' + D.years[1];
 let hmPoint = null;
 
 function seq() { const s = css('--seq').split(',').map(x => x.trim()); return s.map((c, i) => [i / (s.length - 1), c]); }
+const narrow = () => innerWidth < 760;  // phone: legend above the plot (below it met the axis title), smaller ticks
 function base(extra) {
+  const n = narrow(), tf = n ? {color: css('--muted'), size: 10} : {color: css('--muted')};
   return Object.assign({
     paper_bgcolor: css('--surface'), plot_bgcolor: css('--surface'),
     font: {family: 'system-ui, -apple-system, "Segoe UI", sans-serif', size: 12, color: css('--ink2')},
     margin: {l: 52, r: 16, t: 10, b: 44},
-    xaxis: {gridcolor: css('--grid'), linecolor: css('--base'), zerolinecolor: css('--base'), tickfont: {color: css('--muted')}},
-    yaxis: {gridcolor: css('--grid'), linecolor: css('--base'), zerolinecolor: css('--base'), tickfont: {color: css('--muted')}},
-    legend: {orientation: 'h', y: -0.2, font: {color: css('--ink2')}},
+    xaxis: {gridcolor: css('--grid'), linecolor: css('--base'), zerolinecolor: css('--base'), tickfont: tf, automargin: true},
+    yaxis: {gridcolor: css('--grid'), linecolor: css('--base'), zerolinecolor: css('--base'), tickfont: tf, automargin: true},
+    legend: n ? {orientation: 'h', x: 0, y: 1.02, yanchor: 'bottom', font: {color: css('--ink2'), size: 10}}
+              : {orientation: 'h', y: -0.2, font: {color: css('--ink2')}},
     hoverlabel: {bgcolor: css('--surface'), bordercolor: css('--base'), font: {color: css('--ink')}},
   }, extra || {});
 }
@@ -423,6 +426,7 @@ const WM = {data: ['--s1', 'ERA5 series'], hist: ['--s1', 'historical weather'],
   regime: ['--s4', 'regime switching'], regime_t: ['--s5', 'regimes + temperature']};
 const ramp = () => css('--ramp4').split(',').map(x => x.trim());
 function roomy(lay) {  // two-row legend below an axis title
+  if (narrow()) return lay;
   lay.margin = Object.assign({}, lay.margin, {b: 96});
   lay.legend = Object.assign({}, lay.legend, {y: -0.32});
   return lay;
@@ -566,8 +570,9 @@ function drawSweep() {
   const lay = base();
   lay.yaxis = Object.assign(lay.yaxis, {title: {text: 'marginal ELCC, % of power'}, range: [0, 105]});
   const ticks = [0, 10, 20, 30, 40, 50];
-  lay.xaxis = Object.assign(lay.xaxis, {title: {text: 'storage fleet, % of peak load (GW at KSE scale)'},
-    tickvals: ticks, ticktext: ticks.map(t => t + ' % / ' + (t * gw / 100).toFixed(1) + ' GW')});
+  const sep = narrow() ? '<br>' : ' / ';
+  lay.xaxis = Object.assign(lay.xaxis, {title: {text: 'storage fleet, % of peak load' + (narrow() ? '<br>' : ' ') + '(GW at KSE scale)'},
+    tickvals: ticks, ticktext: ticks.map(t => t + ' %' + sep + (t * gw / 100).toFixed(1) + ' GW')});
   kwdShapes(lay);
   Plotly.react('sweep', tr, roomy(lay), cfg);
 }
