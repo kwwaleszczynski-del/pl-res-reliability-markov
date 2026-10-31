@@ -219,7 +219,8 @@ def elcc_curves(results_dir=RESULTS_DIR):
             pv = [k["pv"] for k in kwd]
             ax.axhspan(min(wv), max(wv), color=C1, alpha=0.10, linewidth=0)
             ax.axhspan(min(pv), max(pv), color=C2, alpha=0.12, linewidth=0)
-            ax.text(1, min(wv) - 0.3, f"KWD onshore wind {min(wv):.1f}-{max(wv):.1f} %", ha="left", va="top",
+            # below the band where no curve passes (the PV curves start at the band on the left)
+            ax.text(40, min(wv) - 0.3, f"KWD onshore wind {min(wv):.1f}-{max(wv):.1f} %", ha="left", va="top",
                     fontsize=8, color=INK2)
             ax.text(1, min(pv) - 0.3, f"KWD solar {min(pv):.1f}-{max(pv):.1f} %", ha="left", va="top",
                     fontsize=8, color=INK2)
@@ -301,11 +302,11 @@ def sensitivity(results_dir=RESULTS_DIR):
     if pair.exists():
         pr = pd.read_csv(pair)
         w = pr[pr["tech"] == "wind"]
-        ax.text(0.02, 0.04, "all ten years, wind: load and weather of the same year {:.1f} %;\n"
+        ax.text(0.02, 0.30, "all ten years, wind: load and weather of the same year {:.1f} %;\n"
                 "load paired with other weather years {:.1f} % ({:.1f}-{:.1f})".format(
                     w[w["matched"]]["elcc_pct"].iloc[0], w[~w["matched"]]["elcc_pct"].mean(),
                     w[~w["matched"]]["elcc_pct"].min(), w[~w["matched"]]["elcc_pct"].max()),
-                transform=ax.transAxes, fontsize=8, color=INK2, va="bottom")
+                transform=ax.transAxes, fontsize=8, color=INK2, va="bottom")  # in the gap between the wind and PV lines
     fig.tight_layout()
     return save(fig, "sensitivity.png")
 

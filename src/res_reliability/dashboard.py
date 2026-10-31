@@ -439,7 +439,7 @@ function drawLole() {
       hovertemplate: mix + ', ' + (model === 'hist' ? 'historical' : 'Markov monthly') + '<br>%{x:.0f} % of peak: LOLE %{y:.2f} h/yr<extra></extra>'});
   }
   const lay = base();
-  lay.yaxis = Object.assign(lay.yaxis, {type: 'log', title: {text: 'LOLE, h/yr'}});
+  lay.yaxis = Object.assign(lay.yaxis, {type: 'log', dtick: 'D2', title: {text: 'LOLE, h/yr'}});  // 1-2-5 labels only
   lay.xaxis = Object.assign(lay.xaxis, {title: {text: 'RES capacity, % of peak load'}});
   lay.shapes = [{type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 3, y1: 3, line: {color: css('--muted'), width: 1, dash: 'dot'}}];
   Plotly.react('lole', tr, lay, cfg);
@@ -619,7 +619,7 @@ function drawStorageLulls() {
       hovertemplate: WM[m][1] + '<br>%{x:.0f} % wind + PV: LOLE %{y:.1f} h/yr<extra></extra>'};
   });
   const lay = base();
-  lay.yaxis = Object.assign(lay.yaxis, {type: 'log', title: {text: 'LOLE without storage, h/yr'}});
+  lay.yaxis = Object.assign(lay.yaxis, {type: 'log', dtick: 'D2', title: {text: 'LOLE without storage, h/yr'}});
   lay.xaxis = Object.assign(lay.xaxis, {title: {text: 'wind + PV share of annual demand, %'}});
   Plotly.react('slole', tr, roomy(lay), cfg);
   const tr2 = ms.map(m => {
