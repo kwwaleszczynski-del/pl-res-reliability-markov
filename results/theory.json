@@ -1,0 +1,143 @@
+{
+ "tests": {
+  "kelmarsh": {
+   "operation_vs_theory": {
+    "g2": 3302.968977784661,
+    "dof": 17,
+    "p_value": 0.0,
+    "transitions": 49192,
+    "impossible_transitions": 0,
+    "max_abs_diff": 0.1609629583505512
+   },
+   "production_ratio": 0.8027168081432758,
+   "reliability": {
+    "for": 0.004364954250587247,
+    "mttr_h": 12.93541099773243,
+    "outages": 98,
+    "turbine_years": 33.15297494926433,
+    "outages_per_turbine_year": 2.9559941498455067
+   }
+  },
+  "penmanshiel": {
+   "operation_vs_theory": {
+    "g2": 2596.436837084976,
+    "dof": 18,
+    "p_value": 0.0,
+    "transitions": 16958,
+    "impossible_transitions": 2,
+    "max_abs_diff": 0.2539996290022899
+   },
+   "production_ratio": 0.9134701184061501,
+   "reliability": {
+    "for": 0.014897634955157054,
+    "mttr_h": 19.68676435118186,
+    "outages": 691,
+    "turbine_years": 104.23917265981734,
+    "outages_per_turbine_year": 6.628985844458551
+   }
+  },
+  "hill_of_towie": {
+   "operation_vs_theory": {
+    "g2": 582.8441740627882,
+    "dof": 11,
+    "p_value": 6.53468909760402e-118,
+    "transitions": 8738,
+    "impossible_transitions": 5,
+    "max_abs_diff": 0.2048196248196248
+   },
+   "production_ratio": 1.0746909969090246,
+   "reliability": {
+    "for": 0.02168527266771253,
+    "mttr_h": 22.07111322693749,
+    "outages": 1838,
+    "turbine_years": 213.55057854515474,
+    "outages_per_turbine_year": 8.606860316285022
+   }
+  },
+  "pvdaq34": {
+   "production_ratio": 0.8905481606605553,
+   "for_site": 0.05729243474413803
+  }
+ },
+ "farms": {
+  "kelmarsh": {
+   "key": "kelmarsh",
+   "label": "Kelmarsh",
+   "model": "Senvion MM92",
+   "n_turbines": 6,
+   "rated_kw": 2050.0,
+   "rotor_m": 92.0,
+   "hub_m": 75.16666666666667,
+   "lat": 52.4015,
+   "lon": -0.9431,
+   "log_start": "2016-04-15",
+   "log_end": "2022-01-01",
+   "scada_years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021
+   ],
+   "era5_end": "2021-12-31"
+  },
+  "penmanshiel": {
+   "key": "penmanshiel",
+   "label": "Penmanshiel",
+   "model": "Senvion MM82",
+   "n_turbines": 14,
+   "rated_kw": 2050.0,
+   "rotor_m": 82.0,
+   "hub_m": 59.0,
+   "lat": 55.9036,
+   "lon": -2.2913,
+   "log_start": "2016-09-01",
+   "log_end": "2025-01-01",
+   "scada_years": [
+    2018,
+    2020
+   ],
+   "era5_end": "2024-12-31"
+  },
+  "hill_of_towie": {
+   "key": "hill_of_towie",
+   "label": "Hill of Towie",
+   "model": "Siemens SWT-2.3-VS-82",
+   "n_turbines": 21,
+   "rated_kw": 2300.0,
+   "rotor_m": 82.0,
+   "hub_m": 59.0,
+   "lat": 57.5056,
+   "lon": -3.0663,
+   "log_start": "2016-01-02",
+   "log_end": "2026-04-01",
+   "scada_years": [
+    2021
+   ],
+   "era5_end": "2026-03-31"
+  }
+ },
+ "pv_site": {
+  "key": "pvdaq34",
+  "label": "PVDAQ 34 (Las Vegas)",
+  "lat": 36.1952,
+  "lon": -115.1582,
+  "tilt": 11.2,
+  "azimuth": 180.0,
+  "dc_kwp": 146.64,
+  "ac_kw": 135.0,
+  "gamma": -0.0045,
+  "utc_offset_h": -8,
+  "years": [
+   2016,
+   2017,
+   2018
+  ]
+ },
+ "specific_power_w_m2": {
+  "kelmarsh": 308.38150599091256,
+  "penmanshiel": 388.18278802901307,
+  "hill_of_towie": 435.5221524227951
+ }
+}

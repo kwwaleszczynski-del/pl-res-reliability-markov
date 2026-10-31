@@ -460,6 +460,41 @@ def summary(results_dir: Path = RESULTS_DIR) -> dict:
         out["verification_loyo"] = v["loyo_summary"]
     if (results_dir / "verification_long.json").exists():
         out["verification_long"] = j("verification_long.json")
+    if (results_dir / "theory_sites.csv").exists():
+        s = pd.read_csv(results_dir / "theory_sites.csv")
+        out["theory_sites"] = {f"{r.site}:{r.series}": {"cf": round(r.cf, 4), "ratio_to_theory": round(r.ratio, 4),
+                                                         "ratio_year_min": round(r.ratio_year_min, 4),
+                                                         "ratio_year_max": round(r.ratio_year_max, 4),
+                                                         "cf_DJF": round(r.cf_DJF, 4), "cf_JJA": round(r.cf_JJA, 4)}
+                               for r in s.itertuples()}
+        a = pd.read_csv(results_dir / "theory_adequacy.csv")
+        out["theory_adequacy"] = {f"{r.site}:{r.load}:{r.series}:{r.structural}":
+                                  {"elcc_pct": round(r.elcc_pct, 2), "lole": round(r.lole, 3), "eens": round(r.eens, 1),
+                                   "cf": round(r.cf, 4)} for r in a.itertuples()}
+        out["theory_mc"] = {f"{r.site}:{r.series}": {"lole": round(r.mc_lole, 3), "lole_ci95": round(r.mc_lole_ci95, 3),
+                                                     "lolf": round(r.mc_lolf, 3), "lold_h": round(r.mc_lold_h, 2)}
+                            for r in a.dropna(subset=["mc_lole"]).itertuples()}
+        t = pd.read_csv(results_dir / "theory_transfer.csv")
+        out["theory_transfer"] = {f"{r.case}:{r.energy_ratio:.3f}:{r.model}": round(r.elcc_pct, 2) for r in t.itertuples()}
+    if (results_dir / "failure_tests.json").exists():
+        f = j("failure_tests.json")["tests"]
+        out["failure_tests"] = {f"{site}:{cov}:{what}": {k: (round(v, 6) if isinstance(v, float) else v)
+                                                        for k, v in r.items() if k in ("g2", "df", "p_value", "trend_p",
+                                                                                       "dispersion", "quasi_p",
+                                                                                       "quasi_trend_p")}
+                                for site, covs in f.items() if site != "common"
+                                for cov, whats in covs.items() for what, r in whats.items()}
+        out["failure_common_effect"] = {f"{cov}:{what}": {"state_effect": [round(x, 3) for x in r["state_effect"]],
+                                                          "p_state": r["p_state"], "p_interaction": r["p_interaction"]}
+                                        for cov, whats in f["common"].items() for what, r in whats.items()}
+        p = pd.read_csv(results_dir / "integration_pl.csv")
+        out["integration_pl"] = {f"{r.rates}:{r.variant}": {"elcc_pct_KSE": round(r.elcc_pct_KSE, 3),
+                                                            "lole_KSE": round(r.lole_KSE, 4)} for r in p.itertuples()}
+        fa = pd.read_csv(results_dir / "integration_farms.csv")
+        out["integration_farms"] = {f"{r.site}:{r.model}": {"elcc_pct_KSE": round(r.elcc_pct_KSE, 3),
+                                                            "mean_availability": round(r.mean_availability, 5),
+                                                            "output_loss_pct": round(r.output_loss_pct, 3)}
+                                    for r in fa.itertuples()}
     save_json("summary.json", out, results_dir)
     return out
 

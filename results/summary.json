@@ -3665,5 +3665,724 @@
     }
    }
   }
+ },
+ "theory_sites": {
+  "kelmarsh:theory": {
+   "cf": 0.3625,
+   "ratio_to_theory": 1.0,
+   "ratio_year_min": 1.0,
+   "ratio_year_max": 1.0,
+   "cf_DJF": 0.4796,
+   "cf_JJA": 0.2631
+  },
+  "kelmarsh:model": {
+   "cf": 0.3741,
+   "ratio_to_theory": 1.0321,
+   "ratio_year_min": 0.9871,
+   "ratio_year_max": 1.0883,
+   "cf_DJF": 0.4696,
+   "cf_JJA": 0.2887
+  },
+  "kelmarsh:operation_all": {
+   "cf": 0.2894,
+   "ratio_to_theory": 0.7985,
+   "ratio_year_min": 0.7812,
+   "ratio_year_max": 0.8057,
+   "cf_DJF": 0.3958,
+   "cf_JJA": 0.2012
+  },
+  "kelmarsh:operation": {
+   "cf": 0.291,
+   "ratio_to_theory": 0.8027,
+   "ratio_year_min": 0.783,
+   "ratio_year_max": 0.8091,
+   "cf_DJF": 0.3977,
+   "cf_JJA": 0.202
+  },
+  "penmanshiel:theory": {
+   "cf": 0.3569,
+   "ratio_to_theory": 1.0,
+   "ratio_year_min": 1.0,
+   "ratio_year_max": 1.0,
+   "cf_DJF": 0.4982,
+   "cf_JJA": 0.2041
+  },
+  "penmanshiel:model": {
+   "cf": 0.4234,
+   "ratio_to_theory": 1.1866,
+   "ratio_year_min": 1.1575,
+   "ratio_year_max": 1.218,
+   "cf_DJF": 0.5458,
+   "cf_JJA": 0.281
+  },
+  "penmanshiel:operation_all": {
+   "cf": 0.3244,
+   "ratio_to_theory": 0.9091,
+   "ratio_year_min": 0.8937,
+   "ratio_year_max": 0.9258,
+   "cf_DJF": 0.4334,
+   "cf_JJA": 0.198
+  },
+  "penmanshiel:operation": {
+   "cf": 0.326,
+   "ratio_to_theory": 0.9135,
+   "ratio_year_min": 0.8982,
+   "ratio_year_max": 0.93,
+   "cf_DJF": 0.4352,
+   "cf_JJA": 0.1994
+  },
+  "hill_of_towie:theory": {
+   "cf": 0.2288,
+   "ratio_to_theory": 1.0,
+   "ratio_year_min": 1.0,
+   "ratio_year_max": 1.0,
+   "cf_DJF": 0.3171,
+   "cf_JJA": 0.1012
+  },
+  "hill_of_towie:model": {
+   "cf": 0.3367,
+   "ratio_to_theory": 1.4717,
+   "ratio_year_min": 1.4717,
+   "ratio_year_max": 1.4717,
+   "cf_DJF": 0.4325,
+   "cf_JJA": 0.1943
+  },
+  "hill_of_towie:operation_all": {
+   "cf": 0.2405,
+   "ratio_to_theory": 1.0511,
+   "ratio_year_min": 1.0511,
+   "ratio_year_max": 1.0511,
+   "cf_DJF": 0.3228,
+   "cf_JJA": 0.1176
+  },
+  "hill_of_towie:operation": {
+   "cf": 0.2459,
+   "ratio_to_theory": 1.0747,
+   "ratio_year_min": 1.0747,
+   "ratio_year_max": 1.0747,
+   "cf_DJF": 0.3319,
+   "cf_JJA": 0.1183
+  },
+  "pvdaq34:theory": {
+   "cf": 0.2158,
+   "ratio_to_theory": 1.0,
+   "ratio_year_min": 1.0,
+   "ratio_year_max": 1.0,
+   "cf_DJF": 0.155,
+   "cf_JJA": 0.2543
+  },
+  "pvdaq34:operation_all": {
+   "cf": 0.1922,
+   "ratio_to_theory": 0.8905,
+   "ratio_year_min": 0.8885,
+   "ratio_year_max": 0.8944,
+   "cf_DJF": 0.1324,
+   "cf_JJA": 0.2304
+  },
+  "pvdaq34:operation": {
+   "cf": 0.1922,
+   "ratio_to_theory": 0.8905,
+   "ratio_year_min": 0.8885,
+   "ratio_year_max": 0.8944,
+   "cf_DJF": 0.1324,
+   "cf_JJA": 0.2304
+  }
+ },
+ "theory_adequacy": {
+  "kelmarsh:KSE:theory:literature": {
+   "elcc_pct": 32.47,
+   "lole": 1.454,
+   "eens": 146.0,
+   "cf": 0.3488
+  },
+  "kelmarsh:KSE:theory:site": {
+   "elcc_pct": 33.64,
+   "lole": 1.416,
+   "eens": 142.1,
+   "cf": 0.3655
+  },
+  "kelmarsh:KSE:theory_scaled:site": {
+   "elcc_pct": 28.53,
+   "lole": 1.589,
+   "eens": 160.2,
+   "cf": 0.2935
+  },
+  "kelmarsh:KSE:model:site": {
+   "elcc_pct": 37.11,
+   "lole": 1.302,
+   "eens": 128.9,
+   "cf": 0.3763
+  },
+  "kelmarsh:KSE:operation:site": {
+   "elcc_pct": 28.32,
+   "lole": 1.598,
+   "eens": 161.3,
+   "cf": 0.294
+  },
+  "kelmarsh:RTS:theory:literature": {
+   "elcc_pct": 29.94,
+   "lole": 4.94,
+   "eens": 583.9,
+   "cf": 0.3485
+  },
+  "kelmarsh:RTS:theory:site": {
+   "elcc_pct": 30.98,
+   "lole": 4.828,
+   "eens": 569.6,
+   "cf": 0.3653
+  },
+  "kelmarsh:RTS:theory_scaled:site": {
+   "elcc_pct": 26.12,
+   "lole": 5.363,
+   "eens": 635.9,
+   "cf": 0.2933
+  },
+  "kelmarsh:RTS:model:site": {
+   "elcc_pct": 34.7,
+   "lole": 4.429,
+   "eens": 516.9,
+   "cf": 0.376
+  },
+  "kelmarsh:RTS:operation:site": {
+   "elcc_pct": 25.93,
+   "lole": 5.386,
+   "eens": 639.1,
+   "cf": 0.2938
+  },
+  "penmanshiel:KSE:theory:literature": {
+   "elcc_pct": 32.75,
+   "lole": 1.441,
+   "eens": 144.5,
+   "cf": 0.3384
+  },
+  "penmanshiel:KSE:theory:site": {
+   "elcc_pct": 33.63,
+   "lole": 1.412,
+   "eens": 141.5,
+   "cf": 0.3509
+  },
+  "penmanshiel:KSE:theory_scaled:site": {
+   "elcc_pct": 31.53,
+   "lole": 1.481,
+   "eens": 148.7,
+   "cf": 0.3209
+  },
+  "penmanshiel:KSE:model:site": {
+   "elcc_pct": 42.06,
+   "lole": 1.156,
+   "eens": 113.4,
+   "cf": 0.4177
+  },
+  "penmanshiel:KSE:operation:site": {
+   "elcc_pct": 29.69,
+   "lole": 1.549,
+   "eens": 156.6,
+   "cf": 0.3214
+  },
+  "penmanshiel:RTS:theory:literature": {
+   "elcc_pct": 27.08,
+   "lole": 5.262,
+   "eens": 628.5,
+   "cf": 0.3383
+  },
+  "penmanshiel:RTS:theory:site": {
+   "elcc_pct": 27.81,
+   "lole": 5.182,
+   "eens": 618.3,
+   "cf": 0.3508
+  },
+  "penmanshiel:RTS:theory_scaled:site": {
+   "elcc_pct": 26.02,
+   "lole": 5.384,
+   "eens": 643.0,
+   "cf": 0.3208
+  },
+  "penmanshiel:RTS:model:site": {
+   "elcc_pct": 36.2,
+   "lole": 4.285,
+   "eens": 501.9,
+   "cf": 0.4176
+  },
+  "penmanshiel:RTS:operation:site": {
+   "elcc_pct": 25.15,
+   "lole": 5.519,
+   "eens": 662.1,
+   "cf": 0.3213
+  },
+  "hill_of_towie:KSE:theory:literature": {
+   "elcc_pct": 21.59,
+   "lole": 1.86,
+   "eens": 190.2,
+   "cf": 0.2166
+  },
+  "hill_of_towie:KSE:theory:site": {
+   "elcc_pct": 22.08,
+   "lole": 1.84,
+   "eens": 188.0,
+   "cf": 0.2231
+  },
+  "hill_of_towie:KSE:theory_scaled:site": {
+   "elcc_pct": 23.12,
+   "lole": 1.798,
+   "eens": 183.6,
+   "cf": 0.2378
+  },
+  "hill_of_towie:KSE:model:site": {
+   "elcc_pct": 33.27,
+   "lole": 1.423,
+   "eens": 142.2,
+   "cf": 0.328
+  },
+  "hill_of_towie:KSE:operation:site": {
+   "elcc_pct": 23.51,
+   "lole": 1.782,
+   "eens": 181.9,
+   "cf": 0.2397
+  },
+  "hill_of_towie:RTS:theory:literature": {
+   "elcc_pct": 18.55,
+   "lole": 6.366,
+   "eens": 769.4,
+   "cf": 0.2165
+  },
+  "hill_of_towie:RTS:theory:site": {
+   "elcc_pct": 18.9,
+   "lole": 6.312,
+   "eens": 762.4,
+   "cf": 0.223
+  },
+  "hill_of_towie:RTS:theory_scaled:site": {
+   "elcc_pct": 20.0,
+   "lole": 6.188,
+   "eens": 747.0,
+   "cf": 0.2377
+  },
+  "hill_of_towie:RTS:model:site": {
+   "elcc_pct": 29.36,
+   "lole": 5.025,
+   "eens": 597.6,
+   "cf": 0.3279
+  },
+  "hill_of_towie:RTS:operation:site": {
+   "elcc_pct": 20.96,
+   "lole": 6.033,
+   "eens": 726.1,
+   "cf": 0.2396
+  },
+  "pvdaq34:RTS:theory:literature": {
+   "elcc_pct": 21.35,
+   "lole": 6.046,
+   "eens": 754.8,
+   "cf": 0.2121
+  },
+  "pvdaq34:RTS:theory:site": {
+   "elcc_pct": 20.84,
+   "lole": 6.102,
+   "eens": 760.9,
+   "cf": 0.2061
+  },
+  "pvdaq34:RTS:theory_scaled:site": {
+   "elcc_pct": 19.16,
+   "lole": 6.318,
+   "eens": 786.1,
+   "cf": 0.1837
+  },
+  "pvdaq34:RTS:operation:site": {
+   "elcc_pct": 17.41,
+   "lole": 6.551,
+   "eens": 815.1,
+   "cf": 0.1734
+  }
+ },
+ "theory_mc": {
+  "kelmarsh:theory": {
+   "lole": 1.357,
+   "lole_ci95": 0.232,
+   "lolf": 0.31,
+   "lold_h": 4.38
+  },
+  "kelmarsh:theory_scaled": {
+   "lole": 1.462,
+   "lole_ci95": 0.245,
+   "lolf": 0.35,
+   "lold_h": 4.17
+  },
+  "kelmarsh:operation": {
+   "lole": 1.556,
+   "lole_ci95": 0.252,
+   "lolf": 0.375,
+   "lold_h": 4.15
+  },
+  "penmanshiel:theory": {
+   "lole": 1.327,
+   "lole_ci95": 0.229,
+   "lolf": 0.305,
+   "lold_h": 4.34
+  },
+  "penmanshiel:theory_scaled": {
+   "lole": 1.373,
+   "lole_ci95": 0.236,
+   "lolf": 0.316,
+   "lold_h": 4.35
+  },
+  "penmanshiel:operation": {
+   "lole": 1.468,
+   "lole_ci95": 0.238,
+   "lolf": 0.373,
+   "lold_h": 3.93
+  },
+  "hill_of_towie:theory": {
+   "lole": 1.77,
+   "lole_ci95": 0.274,
+   "lolf": 0.411,
+   "lold_h": 4.31
+  },
+  "hill_of_towie:theory_scaled": {
+   "lole": 1.73,
+   "lole_ci95": 0.27,
+   "lolf": 0.399,
+   "lold_h": 4.34
+  },
+  "hill_of_towie:operation": {
+   "lole": 1.707,
+   "lole_ci95": 0.265,
+   "lolf": 0.414,
+   "lold_h": 4.12
+  }
+ },
+ "theory_transfer": {
+  "energy ratio:0.700:hist": 19.29,
+  "energy ratio:0.700:seasonal": 22.44,
+  "energy ratio:0.800:hist": 21.8,
+  "energy ratio:0.800:seasonal": 25.31,
+  "energy ratio:0.900:hist": 24.18,
+  "energy ratio:0.900:seasonal": 28.07,
+  "energy ratio:1.000:hist": 26.49,
+  "energy ratio:1.000:seasonal": 30.8,
+  "energy ratio:1.100:hist": 28.78,
+  "energy ratio:1.100:seasonal": 33.4,
+  "energy ratio:1.200:hist": 30.99,
+  "energy ratio:1.200:seasonal": 35.92,
+  "quantile map of kelmarsh:0.699:hist": 18.38,
+  "quantile map of kelmarsh:0.699:seasonal": 22.0,
+  "quantile map of penmanshiel:0.585:hist": 15.39,
+  "quantile map of penmanshiel:0.585:seasonal": 18.66,
+  "quantile map of hill_of_towie:0.635:hist": 16.63,
+  "quantile map of hill_of_towie:0.635:seasonal": 20.13
+ },
+ "failure_tests": {
+  "kelmarsh:cf_state:failure": {
+   "g2": 31.507369,
+   "df": 3,
+   "p_value": 1e-06,
+   "trend_p": 0.034063,
+   "dispersion": 1.231069,
+   "quasi_p": 1.2e-05,
+   "quasi_trend_p": 0.05612
+  },
+  "kelmarsh:cf_state:repair": {
+   "g2": 13.441028,
+   "df": 3,
+   "p_value": 0.003774,
+   "trend_p": 0.091358,
+   "dispersion": 3.653788,
+   "quasi_p": 0.29832,
+   "quasi_trend_p": 0.377113
+  },
+  "kelmarsh:ws_bin:failure": {
+   "g2": 186.934651,
+   "df": 5,
+   "p_value": 0.0,
+   "trend_p": 0.0,
+   "dispersion": 1.274,
+   "quasi_p": 0.0,
+   "quasi_trend_p": 0.0
+  },
+  "kelmarsh:ws_bin:repair": {
+   "g2": 35.755214,
+   "df": 5,
+   "p_value": 1e-06,
+   "trend_p": 9e-06,
+   "dispersion": 3.455974,
+   "quasi_p": 0.066007,
+   "quasi_trend_p": 0.017049
+  },
+  "penmanshiel:cf_state:failure": {
+   "g2": 18.741947,
+   "df": 3,
+   "p_value": 0.000309,
+   "trend_p": 0.024009,
+   "dispersion": 1.644629,
+   "quasi_p": 0.009767,
+   "quasi_trend_p": 0.07842
+  },
+  "penmanshiel:cf_state:repair": {
+   "g2": 39.902883,
+   "df": 3,
+   "p_value": 0.0,
+   "trend_p": 0.002416,
+   "dispersion": 4.805085,
+   "quasi_p": 0.040124,
+   "quasi_trend_p": 0.166376
+  },
+  "penmanshiel:ws_bin:failure": {
+   "g2": 310.33581,
+   "df": 5,
+   "p_value": 0.0,
+   "trend_p": 0.0,
+   "dispersion": 1.709874,
+   "quasi_p": 0.0,
+   "quasi_trend_p": 0.0
+  },
+  "penmanshiel:ws_bin:repair": {
+   "g2": 84.952024,
+   "df": 5,
+   "p_value": 0.0,
+   "trend_p": 0.0,
+   "dispersion": 4.987315,
+   "quasi_p": 0.004436,
+   "quasi_trend_p": 0.00594
+  },
+  "hill_of_towie:cf_state:failure": {
+   "g2": 62.721162,
+   "df": 3,
+   "p_value": 0.0,
+   "trend_p": 0.0,
+   "dispersion": 2.885487,
+   "quasi_p": 7.4e-05,
+   "quasi_trend_p": 0.000568
+  },
+  "hill_of_towie:cf_state:repair": {
+   "g2": 5.496473,
+   "df": 3,
+   "p_value": 0.13885,
+   "trend_p": 0.179777,
+   "dispersion": 7.645272,
+   "quasi_p": 0.868741,
+   "quasi_trend_p": 0.62757
+  },
+  "hill_of_towie:ws_bin:failure": {
+   "g2": 110.354627,
+   "df": 5,
+   "p_value": 0.0,
+   "trend_p": 0.0,
+   "dispersion": 2.264587,
+   "quasi_p": 0.0,
+   "quasi_trend_p": 1e-06
+  },
+  "hill_of_towie:ws_bin:repair": {
+   "g2": 11.452166,
+   "df": 5,
+   "p_value": 0.043116,
+   "trend_p": 0.247393,
+   "dispersion": 5.191186,
+   "quasi_p": 0.819957,
+   "quasi_trend_p": 0.611679
+  }
+ },
+ "failure_common_effect": {
+  "cf_state:failure": {
+   "state_effect": [
+    0.964,
+    0.83,
+    0.877,
+    1.321
+   ],
+   "p_state": 7.168795263112618e-20,
+   "p_interaction": 0.0020662618017616356
+  },
+  "cf_state:repair": {
+   "state_effect": [
+    1.0,
+    0.978,
+    0.969,
+    1.04
+   ],
+   "p_state": 0.5445998068648998,
+   "p_interaction": 2.0971001024476048e-10
+  },
+  "ws_bin:failure": {
+   "state_effect": [
+    0.978,
+    0.838,
+    0.915,
+    1.051,
+    1.181,
+    8.86
+   ],
+   "p_state": 2.047707787504607e-106,
+   "p_interaction": 5.7061949186122704e-18
+  },
+  "ws_bin:repair": {
+   "state_effect": [
+    0.973,
+    0.967,
+    0.984,
+    1.003,
+    0.9,
+    1.795
+   ],
+   "p_state": 2.184120484479685e-08,
+   "p_interaction": 1.313170768473161e-14
+  }
+ },
+ "integration_pl": {
+  "kelmarsh:independent": {
+   "elcc_pct_KSE": 30.68,
+   "lole_KSE": 1.5091
+  },
+  "kelmarsh:state-dependent": {
+   "elcc_pct_KSE": 30.689,
+   "lole_KSE": 1.5088
+  },
+  "kelmarsh:state-dependent: independent, same FOR": {
+   "elcc_pct_KSE": 30.684,
+   "lole_KSE": 1.5089
+  },
+  "penmanshiel:independent": {
+   "elcc_pct_KSE": 30.491,
+   "lole_KSE": 1.5158
+  },
+  "penmanshiel:state-dependent": {
+   "elcc_pct_KSE": 30.477,
+   "lole_KSE": 1.5163
+  },
+  "penmanshiel:state-dependent: independent, same FOR": {
+   "elcc_pct_KSE": 30.481,
+   "lole_KSE": 1.5161
+  },
+  "hill_of_towie:independent": {
+   "elcc_pct_KSE": 30.279,
+   "lole_KSE": 1.5233
+  },
+  "hill_of_towie:state-dependent": {
+   "elcc_pct_KSE": 30.311,
+   "lole_KSE": 1.5223
+  },
+  "hill_of_towie:state-dependent: independent, same FOR": {
+   "elcc_pct_KSE": 30.329,
+   "lole_KSE": 1.5215
+  },
+  "pooled:independent": {
+   "elcc_pct_KSE": 30.378,
+   "lole_KSE": 1.5198
+  },
+  "pooled:state-dependent": {
+   "elcc_pct_KSE": 30.399,
+   "lole_KSE": 1.5191
+  },
+  "pooled:state-dependent: independent, same FOR": {
+   "elcc_pct_KSE": 30.409,
+   "lole_KSE": 1.5187
+  },
+  "pooled:H1 (hypothetical) no repairs in the highest state": {
+   "elcc_pct_KSE": 30.224,
+   "lole_KSE": 1.5254
+  },
+  "pooled:H1 (hypothetical) no repairs in the highest state: independent, same FOR": {
+   "elcc_pct_KSE": 30.33,
+   "lole_KSE": 1.5215
+  },
+  "pooled:H2 (hypothetical) H1 + 5x failures in the highest state": {
+   "elcc_pct_KSE": 29.47,
+   "lole_KSE": 1.5515
+  },
+  "pooled:H2 (hypothetical) H1 + 5x failures in the highest state: independent, same FOR": {
+   "elcc_pct_KSE": 30.006,
+   "lole_KSE": 1.5328
+  },
+  "pooled:MC: independent": {
+   "elcc_pct_KSE": 30.725,
+   "lole_KSE": 1.369
+  },
+  "pooled:MC: state-dependent": {
+   "elcc_pct_KSE": 30.725,
+   "lole_KSE": 1.367
+  },
+  "pooled:MC: H1 (hypothetical) no repairs in the highest state": {
+   "elcc_pct_KSE": 30.627,
+   "lole_KSE": 1.3735
+  },
+  "pooled:MC: H2 (hypothetical) H1 + 5x failures in the highest state": {
+   "elcc_pct_KSE": 29.871,
+   "lole_KSE": 1.402
+  }
+ },
+ "integration_farms": {
+  "kelmarsh:independent": {
+   "elcc_pct_KSE": 27.692,
+   "mean_availability": 0.99573,
+   "output_loss_pct": 0.427
+  },
+  "kelmarsh:state-dependent": {
+   "elcc_pct_KSE": 27.684,
+   "mean_availability": 0.99523,
+   "output_loss_pct": 0.573
+  },
+  "kelmarsh:independent, same FOR": {
+   "elcc_pct_KSE": 27.682,
+   "mean_availability": 0.99523,
+   "output_loss_pct": 0.477
+  },
+  "kelmarsh:hypothetical: no repairs at 12 m/s or more": {
+   "elcc_pct_KSE": 27.629,
+   "mean_availability": 0.99279,
+   "output_loss_pct": 1.07
+  },
+  "kelmarsh:hypothetical: independent, same FOR": {
+   "elcc_pct_KSE": 27.63,
+   "mean_availability": 0.99279,
+   "output_loss_pct": 0.721
+  },
+  "penmanshiel:independent": {
+   "elcc_pct_KSE": 25.096,
+   "mean_availability": 0.98888,
+   "output_loss_pct": 1.112
+  },
+  "penmanshiel:state-dependent": {
+   "elcc_pct_KSE": 25.091,
+   "mean_availability": 0.98861,
+   "output_loss_pct": 1.199
+  },
+  "penmanshiel:independent, same FOR": {
+   "elcc_pct_KSE": 25.093,
+   "mean_availability": 0.98861,
+   "output_loss_pct": 1.139
+  },
+  "penmanshiel:hypothetical: no repairs at 12 m/s or more": {
+   "elcc_pct_KSE": 24.99,
+   "mean_availability": 0.98457,
+   "output_loss_pct": 2.052
+  },
+  "penmanshiel:hypothetical: independent, same FOR": {
+   "elcc_pct_KSE": 25.006,
+   "mean_availability": 0.98457,
+   "output_loss_pct": 1.544
+  },
+  "hill_of_towie:independent": {
+   "elcc_pct_KSE": 19.246,
+   "mean_availability": 0.98116,
+   "output_loss_pct": 1.884
+  },
+  "hill_of_towie:state-dependent": {
+   "elcc_pct_KSE": 19.241,
+   "mean_availability": 0.98124,
+   "output_loss_pct": 2.062
+  },
+  "hill_of_towie:independent, same FOR": {
+   "elcc_pct_KSE": 19.248,
+   "mean_availability": 0.98124,
+   "output_loss_pct": 1.876
+  },
+  "hill_of_towie:hypothetical: no repairs at 12 m/s or more": {
+   "elcc_pct_KSE": 19.216,
+   "mean_availability": 0.98003,
+   "output_loss_pct": 2.341
+  },
+  "hill_of_towie:hypothetical: independent, same FOR": {
+   "elcc_pct_KSE": 19.23,
+   "mean_availability": 0.98003,
+   "output_loss_pct": 1.997
+  }
  }
 }

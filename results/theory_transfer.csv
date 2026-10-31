@@ -1,0 +1,19 @@
+case,energy_ratio,model,cf,elcc_pct,lole
+energy ratio,0.7,hist,0.2006,19.2851,1.95306
+energy ratio,0.7,seasonal,0.2006,22.4408,1.82234
+energy ratio,0.8,hist,0.229257,21.7961,1.84723
+energy ratio,0.8,seasonal,0.229257,25.3107,1.70687
+energy ratio,0.9,hist,0.257914,24.1752,1.74748
+energy ratio,0.9,seasonal,0.257914,28.0747,1.60213
+energy ratio,1,hist,0.286571,26.4913,1.65809
+energy ratio,1,seasonal,0.286571,30.7959,1.5051
+energy ratio,1.1,hist,0.315228,28.7762,1.57555
+energy ratio,1.1,seasonal,0.315228,33.399,1.41732
+energy ratio,1.2,hist,0.343638,30.9858,1.50037
+energy ratio,1.2,seasonal,0.343638,35.9245,1.33575
+quantile map of kelmarsh,0.699118,hist,0.200347,18.3764,1.99777
+quantile map of kelmarsh,0.699118,seasonal,0.200347,21.9977,1.84036
+quantile map of penmanshiel,0.584982,hist,0.167639,15.3884,2.13747
+quantile map of penmanshiel,0.584982,seasonal,0.167639,18.6616,1.98382
+quantile map of hill_of_towie,0.635212,hist,0.182033,16.6304,2.07748
+quantile map of hill_of_towie,0.635212,seasonal,0.182033,20.1265,1.91969

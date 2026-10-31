@@ -3,12 +3,14 @@
 Usage:
     python -m res_reliability fetch-weather --budget 2400   # ERA5 grid from Open-Meteo (cached)
     python -m res_reliability fetch-load                    # KSE demand from PSE (cached)
+    python -m res_reliability fetch-farms                   # ERA5 at the open wind farms and the PV site (cached)
     python -m res_reliability run                           # all stages -> results/
     python -m res_reliability run --stages markov elcc --n-sims 500
     python -m res_reliability run --stages weather storage --jobs 6   # regime models, storage
     python -m res_reliability --data-dir data/long fetch-weather --start-year 1980 --end-year 2014 --budget 8000
     python -m res_reliability --data-dir data/long fetch-load --start-year 2010 --end-year 2014
     python -m res_reliability run --stages long             # models fitted on 2015-2024 against 1980-2014
+    python -m res_reliability run --stages theory failures  # open farm data: theory vs SCADA, failure rates
     python -m res_reliability figures                       # README charts -> docs/img/
     python -m res_reliability dashboard                     # docs/index.html
 """
@@ -22,7 +24,8 @@ from pathlib import Path
 
 from res_reliability import config
 
-STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity", "weather", "storage", "verify"]
+STAGES = ["structural", "load", "markov", "variants", "elcc", "sensitivity", "weather", "storage", "verify",
+          "theory", "failures"]
 
 
 def _fetch_weather(args: argparse.Namespace) -> int:
@@ -39,6 +42,14 @@ def _fetch_load(args: argparse.Namespace) -> int:
 
     s = pse.fetch(list(range(args.start_year, args.end_year + 1)), data_dir=args.data_dir)
     logging.getLogger(__name__).info("KSE demand: %d hours, %s .. %s", len(s), s.index[0], s.index[-1])
+    return 0
+
+
+def _fetch_farms(args: argparse.Namespace) -> int:
+    from res_reliability import farms
+
+    got = farms.fetch_all(data_dir=args.data_dir, budget=args.budget)
+    logging.getLogger(__name__).info("ERA5 cached for %d sites", len(got))
     return 0
 
 
@@ -73,6 +84,12 @@ def _run(args: argparse.Namespace) -> int:
                 analyses.storage_stage(ctx, args.n_sims, args.jobs, args.data_dir)
             elif st == "verify":
                 analyses.verify_stage(ctx, args.n_sims, args.jobs, args.data_dir)
+            elif st == "theory":
+                from res_reliability import operating
+                operating.theory_stage(ctx, args.n_sims, args.data_dir)
+            elif st == "failures":
+                from res_reliability import operating
+                operating.failures_stage(ctx, args.n_sims, args.data_dir)
             elif st == "long":
                 analyses.long_stage(ctx, args.long_dir, list(range(args.long_years[0], args.long_years[1] + 1)))
         log.info("stage %s done in %.0f s", st, time.time() - t0)
@@ -114,6 +131,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--start-year", type=int, default=config.YEARS[0])
     s.add_argument("--end-year", type=int, default=config.YEARS[-1])
     s.set_defaults(func=_fetch_load)
+
+    s = sub.add_parser("fetch-farms", help="download ERA5 at the open wind farms and the PV site (Open-Meteo)")
+    s.add_argument("--budget", type=float, default=2400.0, help="max Open-Meteo call weight per 24 h")
+    s.set_defaults(func=_fetch_farms)
 
     s = sub.add_parser("run", help="run study stages and write results/")
     s.add_argument("--stages", nargs="+", choices=STAGES + ["long"], help="default: all except long")

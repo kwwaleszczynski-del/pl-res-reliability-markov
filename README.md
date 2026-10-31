@@ -15,6 +15,11 @@ in photovoltaic and wind power systems"* (2025), and extends and refines it. A s
 chains cannot do: a **regime-switching weather model** with multi-day lulls and the cold-calm link to demand, and
 **storage** in the sequential Monte Carlo, with the ELCC of 1-8 h storage against the capacity-market factors and the
 storage energy needed to keep LOLE unchanged as wind and PV grow ([Storage and multi-day lulls](#storage-and-multi-day-lulls)).
+A third part takes the two remaining questions of the thesis to real operating data: whether models built from
+reanalysis weather and a catalogue power curve are good enough or must be calibrated on SCADA
+([Theory against operating data](#theory-against-operating-data)), and whether failures and repairs that depend on
+the weather break the independence of the production and structural models
+([Weather-dependent failures and repairs](#weather-dependent-failures-and-repairs)).
 
 **Interactive dashboard:** <https://kwwaleszczynski-del.github.io/pl-res-reliability-markov/>
 
@@ -127,6 +132,8 @@ wind (blue) and solar (orange) in the 2028-2030 auctions.*
 | two farms and a PV aggregate | 29-point grid, map of ELCC and CF, distributed portfolio, comparison with KWD |
 | synthetic multi-year KSE profile built from annual reports | real hourly PSE demand 2015-2024 aligned with the weather years |
 | first-order chains only | regime-switching model with multi-day memory, conditioned on temperature; storage in the Monte Carlo |
+| literature against empirical parameters (OZE-LIT vs OZE-EMP) on confidential SCADA | reanalysis + catalogue curve against the open SCADA of three wind farms and a PV system, with the effect on LOLE, EENS and ELCC |
+| independence checked with a Kronecker-sum generator | the Kronecker sum shown to *be* independence; failure and repair intensities by production state from open logs, block generator |
 
 ## Storage and multi-day lulls
 
@@ -280,6 +287,95 @@ simulated decades of every model, every year predicted by models fitted on the o
   model predicts the wind ELCC of the held-out year with a correlation of 0.74 (RMSE 3.2 points, bias +2.6). The
   monthly chain has no skill (r = 0.06, bias +4.1), memory without temperature little (r = 0.31).
 
+## Theory against operating data
+
+Can an adequacy study rely on reanalysis weather and a catalogue power curve, or does the model have to be
+calibrated on the plant's operating data? The thesis compared the two on confidential SCADA; here the comparison
+is repeated on open data: three UK wind farms (Kelmarsh, 6 x Senvion MM92; Penmanshiel, 14 x MM82; Hill of
+Towie, 21 x Siemens SWT-2.3-82) and the PV system PVDAQ 34 in Las Vegas. **Theory** is ERA5 at hub height through
+the manufacturer's catalogue curve with no losses (PV: ERA5 irradiance through this repository's pvlib model with
+the nameplate data); **operation** is the 10-minute SCADA without the turbines in a logged forced outage, because
+technical availability belongs to the structural model. Each series becomes a monthly Markov chain and a plant of
+10 % of peak in the existing framework ([method and full tables](docs/theory_vs_operation.md)).
+
+| | Kelmarsh | Penmanshiel | Hill of Towie | PVDAQ 34 (PV) |
+|---|---|---|---|---|
+| SCADA used | 2016-2021 | 2018, 2020 | 2021 | 2016-2018 |
+| capacity factor: theory / operation | 36.2 / 29.1 % | 35.7 / 32.6 % | 22.9 / 24.6 % | 21.6 / 19.2 % |
+| production ratio (range of years) | 0.80 (0.78-0.81) | 0.91 (0.90-0.93) | 1.08 | 0.89 (0.89) |
+| FOR from the plant's log (forced outages ≥ 1 h) | 0.44 % | 1.49 % | 2.17 % | 5.7 % |
+| ELCC: theory, literature FOR (OZE-LIT) | 32.5 % | 32.7 % | 21.6 % | 21.3 % |
+| ELCC: theory, FOR from the log | 33.6 % | 33.6 % | 22.1 % | 20.8 % |
+| ELCC: theory x production ratio | 28.5 % | 31.5 % | 23.1 % | 19.2 % |
+| **ELCC: operation (OZE-EMP)** | **28.3 %** | **29.7 %** | **23.5 %** | **17.4 %** |
+| ELCC: this repository's Polish wind model at the site | 37.1 % | 42.1 % | 33.3 % | |
+
+*Wind: KSE load; PV: RTS-79 load by the local clock (the KSE load belongs to Polish weather years). Exact values
+from the COPT; RTS-79 for wind and Monte Carlo frequency and duration are in the method page.*
+
+![Theory against operation](docs/img/theory_vs_operation.png)
+
+- **Uncalibrated theory is off by -1.4 to +5.3 points of ELCC, and the error follows the energy.** ERA5 is too
+  windy at Kelmarsh and not windy enough on the hills of Hill of Towie, so even the sign changes from site to
+  site; at one site the ratio is stable (0.78-0.81 in each of six years at Kelmarsh, 0.89 in each of three for PV).
+- **One calibration factor fixes most of it.** Scaled by the plant's own production ratio, the theoretical chain
+  lands within 0.2, 1.8 and 0.4 points of the operating one for the wind farms and 1.7 points for PV. What is left
+  is shape: the catalogue curve reaches rated power at 12 m/s, the farms only 92-96 % at 14-15 m/s, Penmanshiel
+  derates above 16 m/s, and PV loses more in winter (ratio 0.85) than in summer (0.91).
+- **The literature FOR matters less than the production model** (0.5-1.2 points), as the thesis found.
+- **Operating series are less persistent.** Real farms stay half as long in each output state as the reanalysis
+  series (Kelmarsh 2.5 against 4.1 h in the middle state) and rarely sit at full output; the hourly autocorrelation
+  is 0.95 instead of 0.985. Loss-of-load events come out slightly more frequent and shorter, within about one Monte
+  Carlo interval; expected LOLE and ELCC depend only on the hourly distribution.
+- **This repository's wind model would have overstated these farms by 29-37 % of energy** and 8.8-12.4 points of
+  ELCC. Part of it is the turbine (the MM92 has 308 W/m², the MM82 388 and the SWT-2.3-82 436 W/m²) and the hub
+  height (100 m against 59-79 m), part losses beyond the assumed 10 %.
+- **What transfers to Poland, and what does not.** The ranking transfers: energy first, then shape, then the
+  source of the FOR, and a plant's ratio is stable over years. The ratios do not: ERA5's wind bias belongs to the
+  site, and in Poland [era5-check-pl](https://github.com/kwwaleszczynski-del/era5-check-pl) found a median 10 m
+  bias of +8 % with a range of -14 % to +54 % at lowland and coastal stations. No Polish wind farm publishes its
+  SCADA, so the Polish ratio is not measured here. As a sensitivity, not a correction: every 10 % of energy error
+  in the Polish wind series moves the portfolio's ELCC by 2.2-2.5 points (26.5 % with historical weather and the
+  KSE load); with the UK farms' error patterns it would be 15-18 %. One desert rooftop says nothing about the losses
+  of Polish PV.
+
+## Weather-dependent failures and repairs
+
+The thesis combined the production and structural models by assuming them independent and checked it with the
+Kronecker sum $`\mathbf{\Lambda}_{prod} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{\Lambda}_{struct}`$. With
+constant failure and repair intensities that chain is the independence assumption: its stationary distribution is
+the product of the marginals (a unit test checks it to 1e-13). A real correlation needs intensities that depend on
+the weather. They are estimated here from the open status and alarm logs of the three wind farms, per production
+state of the ERA5-driven model that the Polish study uses and per hub-height wind speed, and put into a block
+generator ([method and full tables](docs/weather_dependent_failures.md)).
+
+| | Kelmarsh | Penmanshiel | Hill of Towie |
+|---|---|---|---|
+| turbine-years of logs | 33.2 | 104.2 | 213.6 |
+| forced outages ≥ 1 h / FOR / MTTR | 98 / 0.44 % / 12.9 h | 691 / 1.49 % / 19.7 h | 1838 / 2.17 % / 22.1 h |
+| failures per turbine-year, hub wind < 12 m/s / ≥ 15 m/s | 1.2-4.4 / 98 | 5.5-6.3 / 70 | 7.3-10.4 / 42 |
+| failure rate differs between production states (quasi-Poisson p) | 1e-5 | 0.01 | 7e-5 |
+| repair rate differs between production states (quasi-Poisson p) | 0.30 | 0.04 | 0.87 |
+| turbines unavailable at ≥ 15 m/s: state-dependent / independent | 2.9 / 0.43 % | 2.6 / 1.11 % | 3.7 / 1.88 % |
+| ELCC of the farm (KSE load): independent / state-dependent | 27.69 / 27.68 % | 25.10 / 25.09 % | 19.25 / 19.24 % |
+
+![Failure rates](docs/img/failure_rates.png)
+
+- **Failures depend on the weather, repairs hardly.** Failures are 1.32 times more frequent than average in the
+  highest production state (common effect of the three farms) and 4-80 times more frequent above 15 m/s at hub
+  height than below 12 m/s, mostly short protective trips (tower oscillation, pitch run-away at Kelmarsh). After
+  allowing for the clustering of failures, the repair rate shows no consistent dependence on the weather.
+- **The effect on adequacy is negligible.** In the national portfolio (wind 10 % of peak, KSE load) the
+  state-dependent rates change the ELCC by +0.02 points and LOLE by 0.001 h/yr against independence (pooled rates,
+  30.38 %); for each farm's rates the change is within ±0.03 points, and Monte Carlo with common random numbers
+  cannot tell them apart. The correlation moves unavailability into the windiest hours, which the system needs
+  least, and the FOR of modern turbines is too small for it to matter: the independence assumption of the thesis
+  holds for this purpose.
+- **Only a stress case moves it, and it is hypothetical.** No repairs while the portfolio is in its top state
+  (access restrictions in strong wind, 8 % of the hours): -0.15 points. That plus five times the failure intensity
+  there: -0.91 points (Monte Carlo -0.85), of which -0.54 from the correlation and the rest from the lower mean
+  availability. These cases are not estimated from data.
+
 ## Method
 
 ### Pipeline
@@ -298,6 +394,8 @@ PSE KSE demand 2015-2024 (scaled) ---------------+        LOLE, EENS, LOLF, even
                                                  +--> exact expectation from the COPT --> ELCC (LOLE equality)
                                                  +--> storage on the hourly margins --> storage ELCC,
                                                       storage energy needed for a LOLE target
+Kelmarsh, Penmanshiel, Hill of Towie: SCADA + ERA5 at the site --> theory vs operation --> site chains --> ELCC
+                                      status / alarm logs + ERA5 --> lambda_i, mu_i per state --> block generator
 ```
 
 ### 1. Multi-state Markov model of primary-energy availability
@@ -400,6 +498,13 @@ per regime) and the storage dispatch inside the sequential Monte Carlo (storage 
 target) are described in [docs/weather_storage_method.md](docs/weather_storage_method.md); the bootstrap, the
 ten-year block test, leave one year out and the 1980-2014 test in [docs/verification.md](docs/verification.md).
 
+### 10-11. Operating data: theory against SCADA, weather-dependent failures
+
+The theoretical and operating series, the specific-power scaling of the catalogue curve, the comparison metrics
+and the adequacy runs are in [docs/theory_vs_operation.md](docs/theory_vs_operation.md); events, exposure, the
+rate estimates and tests, the block generator and the hypothetical stress cases in
+[docs/weather_dependent_failures.md](docs/weather_dependent_failures.md).
+
 ## Limitations
 
 - **A stylised system, not the real KSE.** The generating side is the IEEE RTS-79 fleet (no imports, planned
@@ -433,6 +538,12 @@ ten-year block test, leave one year out and the 1980-2014 test in [docs/verifica
 - **Thin structural data.** Kelmarsh is one UK farm with six turbines, and its operator files a stop as "Forced
   outage" more narrowly than the thesis did (every stop of an hour or more while wind was available). PVDAQ system 34 is a
   single US inverter with one long failure in two years; its FOR is an illustration, not an estimate for Polish PV.
+- **Operating data are not Polish.** Three UK farms of 2.0-2.3 MW turbines (one, two and six years of SCADA) and one
+  US desert rooftop set the theory-operation gap and the failure intensities. They show how large the effects are
+  and in which direction the model choices matter; they do not measure the ERA5 bias, the losses or the failure
+  rates of the Polish fleet. Only the MM92 has a public catalogue curve; the curves of the MM82 and the SWT-2.3-82
+  are the MM92 curve moved to their specific power. Hill of Towie's forced outages rest on alarm codes classified
+  from one year of SCADA.
 
 ## Data sources and attribution
 
@@ -450,8 +561,19 @@ ten-year block test, leave one year out and the 1980-2014 test in [docs/verifica
   Allan, R. N. (1996), *Reliability Evaluation of Power Systems*, 2nd ed., Plenum.
 - **Kelmarsh wind farm data:** C. Plumley and R. Takeuchi, Cubico Sustainable Investments,
   doi:10.5281/zenodo.16807551, CC BY 4.0 (status logs, and the MM92 power curve derived from the 10-minute SCADA).
+- **Penmanshiel wind farm data:** C. Plumley, Cubico Sustainable Investments, doi:10.5281/zenodo.16807304,
+  CC BY 4.0 (status logs 2016-2024, 10-minute SCADA 2018 and 2020).
+- **Hill of Towie wind farm open dataset** v2.1.0, RES, doi:10.5281/zenodo.22662930, CC BY 4.0 (alarm logs
+  2016-2026, 10-minute SCADA 2021). The farm data are read from the caches of
+  [wind-power-curve-kelmarsh](https://github.com/kwwaleszczynski-del/wind-power-curve-kelmarsh),
+  [wind-downtime-availability](https://github.com/kwwaleszczynski-del/wind-downtime-availability) and
+  [wind-om-reliability](https://github.com/kwwaleszczynski-del/wind-om-reliability), which download them; the
+  forced-outage alarm codes of Hill of Towie are those classified by wind-om-reliability.
+- **MM92 catalogue power curve:** Open Energy Platform wind turbine library as distributed with windpowerlib
+  (oedb/power_curves.csv), originally windenergie-im-binnenland.de; a published sales curve, not a warranty.
 - **PVDAQ:** NREL, Photovoltaic Data Acquisition (PVDAQ) Public Datasets, Open Energy Data Initiative,
-  doi:10.25984/1846021, CC BY 4.0 (system 34).
+  doi:10.25984/1846021, CC BY 4.0 (system 34; the 2016-2018 AC power as prepared by
+  [pv-budget-bridge](https://github.com/kwwaleszczynski-del/pv-budget-bridge)).
 - **Capacity market:** regulations of the minister responsible for energy on auction parameters: Dz.U. 2024
   poz. 1154 (main auction, delivery 2029), Dz.U. 2025 poz. 1066 (main auction, 2030), Dz.U. 2026 poz. 1359
   (additional auctions, 2028; regulation of 9 October 2026, with the same factors as the main auction for 2028 in
@@ -489,13 +611,17 @@ python -m res_reliability run --stages verify --jobs 4              # bootstrap,
 python -m res_reliability --data-dir data/long fetch-weather --start-year 1980 --end-year 2014 --budget 8000
 python -m res_reliability --data-dir data/long fetch-load --start-year 2010 --end-year 2014
 python -m res_reliability run --stages long                         # models of 2015-2024 against 1980-2014
+python -m res_reliability fetch-farms                 # ERA5 at the three wind farms and the PV site (~125 call units)
+python -m res_reliability run --stages theory failures              # operating data (~3 min)
 python -m res_reliability figures                     # docs/img/*.png
 python -m res_reliability dashboard                   # docs/index.html
 ```
 
 The structural stage reads the Kelmarsh SCADA zips from `../wind-power-curve-kelmarsh/data` (or
 `KELMARSH_DATA_DIR`) and PVDAQ system 34 from `../pv-anomaly-autoencoder/data/pvdaq/system_34`; both sibling
-projects download them.
+projects download them. The stages `theory` and `failures` read the caches of the sibling projects named in the
+data sources (`KELMARSH_DATA_DIR`, `WIND_DOWNTIME_DATA_DIR`, `WIND_OM_DATA_DIR`, `PVDAQ_LONG_DIR`); the stage
+`theory` also needs `results/structural.json` (PVDAQ 34 FOR) and the main study's weather and load.
 
 ```
 src/res_reliability/
@@ -512,6 +638,10 @@ src/res_reliability/
   elcc.py        ELCC by LOLE equality (analytical and Monte Carlo)
   validation.py  residence times, autocorrelation, cross-validation, Anderson-Goodman test, lulls
   verification.py  bootstrap over weather years, curve interpolation, ten-year block test, PIT
+  farms.py       open wind farms and PVDAQ 34: ERA5 at the sites, forced outages, exposure, hourly SCADA
+  theory.py      catalogue curves, theoretical vs operating series, comparison metrics, quantile maps
+  integration.py Kronecker and block generators, rates per state and tests, integrated Monte Carlo
+  operating.py   stages theory and failures -> results/
   analyses.py    study stages -> results/
   figures.py, dashboard.py
 ```

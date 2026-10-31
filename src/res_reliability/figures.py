@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
+from matplotlib.ticker import FuncFormatter  # noqa: E402
 
 from res_reliability.config import IMG_DIR, RESULTS_DIR  # noqa: E402
 from res_reliability.geo import poland_outline  # noqa: E402
@@ -538,11 +539,147 @@ def verification_fig(results_dir=RESULTS_DIR):
     return save(fig, "verification.png")
 
 
+SITE_NAMES = {"kelmarsh": "Kelmarsh", "penmanshiel": "Penmanshiel", "hill_of_towie": "Hill of Towie",
+              "pvdaq34": "PVDAQ 34 (PV)"}
+SERIES_COLORS = {"theory": C2, "theory_scaled": C4, "model": MUTED, "operation": C1}
+SERIES_NAMES = {"theory": "theory: ERA5 + catalogue curve", "theory_scaled": "theory x production ratio",
+                "model": "this model (ERA5 100 m, MM92, -10 %)", "operation": "operation (SCADA)"}
+WS_LABELS = ["<3", "3-6", "6-9", "9-12", "12-15", ">=15"]
+
+
+def _ws_ticks(labels):
+    return [f"{b} m/s" if b != ">=15" else "≥15 m/s" for b in labels]
+
+
+def theory_fig(results_dir=RESULTS_DIR):
+    bins = pd.read_csv(results_dir / "theory_wind_bins.csv")
+    ad = pd.read_csv(results_dir / "theory_adequacy.csv")
+    tr = pd.read_csv(results_dir / "theory_transfer.csv")
+    fig = plt.figure(figsize=(11, 7.4))
+    gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.05])
+    for j, site in enumerate(("kelmarsh", "penmanshiel", "hill_of_towie")):
+        ax = fig.add_subplot(gs[0, j])
+        b = bins[(bins["site"] == site) & (bins["hours"] >= 20)]
+        for col in ("theory", "model", "operation"):
+            ax.plot(b["ws_bin"] + 0.5, b[col], color=SERIES_COLORS[col], label=SERIES_NAMES[col],
+                    linewidth=1.6 if col != "operation" else 2.2, linestyle="--" if col == "model" else "-")
+        ax.set_xlim(0, 22)
+        ax.set_ylim(0, 1.05)
+        ax.set_xlabel("ERA5 wind at hub height, m/s")
+        if j == 0:
+            ax.set_ylabel("farm capacity factor")
+            ax.legend(loc="lower right", fontsize=7.2)
+        ax.set_title(SITE_NAMES[site])
+    ax = fig.add_subplot(gs[1, :2])
+    order = ("kelmarsh", "penmanshiel", "hill_of_towie", "pvdaq34")
+    cases = (("theory", "literature", "theory, FOR from literature"), ("theory", "site", "theory, FOR from the log"),
+             ("theory_scaled", "site", "theory x production ratio"), ("operation", "site", "operation (SCADA)"))
+    w = 0.2
+    for k, ((series, src, label), col) in enumerate(zip(cases, (BASE, C2, C4, C1))):
+        vals = []
+        for site in order:
+            load = "RTS" if site == "pvdaq34" else "KSE"
+            r = ad[(ad["site"] == site) & (ad["series"] == series) & (ad["structural"] == src) & (ad["load"] == load)]
+            vals.append(float(r["elcc_pct"].iloc[0]))
+        x = np.arange(len(order)) + (k - 1.5) * w
+        ax.bar(x, vals, width=w * 0.92, color=col, label=label)
+        for xx, v in zip(x, vals):
+            ax.text(xx, v + 0.4, f"{v:.1f}", ha="center", fontsize=7, color=INK2)
+    ax.set_xticks(np.arange(len(order)), [SITE_NAMES[s] + ("\nRTS-79 load" if s == "pvdaq34" else "\nKSE load")
+                                          for s in order])
+    ax.set_ylabel("ELCC, % of capacity (10 % of peak)")
+    ax.set_title("ELCC of each site's own monthly Markov chain")
+    ax.legend(loc="upper right", fontsize=7.5, ncol=2)
+    ax.grid(axis="x", visible=False)
+    ax = fig.add_subplot(gs[1, 2])
+    for model, ls, name in (("hist", "-", "historical weather"), ("seasonal", "--", "Markov, monthly")):
+        g = tr[(tr["case"] == "energy ratio") & (tr["model"] == model)]
+        ax.plot(g["energy_ratio"], g["elcc_pct"], color=C1, linestyle=ls, marker="o", markersize=3.5, label=name)
+        q = tr[tr["case"].str.startswith("quantile map") & (tr["model"] == model)]
+        ax.scatter(q["energy_ratio"], q["elcc_pct"], color=C2, s=22, zorder=3,
+                   label="UK farms' quantile maps" if model == "hist" else None)
+    ax.set_xlabel("energy of the Polish series / this model")
+    ax.set_ylabel("wind ELCC, %")
+    ax.set_title("Hypothetical: Polish portfolio, energy error")
+    ax.legend(loc="lower right", fontsize=7.2)
+    fig.suptitle("Theory against operating data: three UK wind farms and a US PV system",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "theory_vs_operation.png")
+
+
+def failures_fig(results_dir=RESULTS_DIR):
+    r = pd.read_csv(results_dir / "failure_rates.csv")
+    fa = pd.read_csv(results_dir / "integration_farms.csv")
+    pl = pd.read_csv(results_dir / "integration_pl.csv")
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 7.2))
+    site_colors = {"kelmarsh": C1, "penmanshiel": C2, "hill_of_towie": C3}
+    x = np.arange(len(WS_LABELS))
+    for j, (site, col) in enumerate(site_colors.items()):
+        g = r[(r["site"] == site) & (r["covariate"] == "ws_bin")].set_index("label").reindex(WS_LABELS)
+        xx = x + (j - 1) * 0.18
+        ax = axes[0, 0]
+        lam, lo, hi = 8760 * g["lambda"], 8760 * g["lambda_lo"], 8760 * g["lambda_hi"]
+        ax.errorbar(xx, lam, yerr=[lam - lo, hi - lam], fmt="o", color=col, markersize=4.5, capsize=2,
+                    linewidth=1.2, label=SITE_NAMES[site])
+        ax = axes[0, 1]
+        mttr, lo, hi = 1 / g["mu"], 1 / g["mu_hi"], 1 / g["mu_lo"]
+        ax.errorbar(xx, mttr, yerr=[mttr - lo, hi - mttr], fmt="o", color=col, markersize=4.5, capsize=2,
+                    linewidth=1.2, label=SITE_NAMES[site])
+    for ax, ylabel, title in ((axes[0, 0], "forced outages per turbine-year (log)", "Failure intensity by hub-height wind"),
+                              (axes[0, 1], "mean time to repair, h (log)", "Repair time by hub-height wind (1 / mu)")):
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.yaxis.set_minor_formatter(FuncFormatter(lambda v, _: f"{v:g}" if str(v)[0] in "25" else ""))
+        ax.set_xticks(x, _ws_ticks(WS_LABELS), fontsize=7.8)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        ax.grid(axis="x", visible=False)
+    axes[0, 0].legend(loc="upper left", fontsize=7.5)
+    ax = axes[1, 0]
+    for site, col in site_colors.items():
+        g = fa[fa["site"] == site].set_index("model")
+        ax.plot(x, [100 * (1 - g.loc["state-dependent", f"A_{b}"]) for b in WS_LABELS], color=col, marker="o",
+                markersize=4, label=f"{SITE_NAMES[site]}, state-dependent")
+        ax.axhline(100 * (1 - g.loc["independent", "A_<3"]), color=col, linewidth=1, linestyle=":")
+    ax.set_xticks(x, _ws_ticks(WS_LABELS), fontsize=7.8)
+    ax.set_ylabel("turbines unavailable, %")
+    ax.set_title("Integrated chain: unavailability by wind (dotted: independence)")
+    ax.legend(loc="upper left", fontsize=7.2)
+    ax.grid(axis="x", visible=False)
+    ax = axes[1, 1]
+    p = pl[(pl["rates"] == "pooled") & ~pl["variant"].str.startswith("MC")].reset_index(drop=True)
+    names = {"independent": "independent, constant rates", "state-dependent": "state-dependent rates",
+             "state-dependent: independent, same FOR": "  independent, same FOR",
+             "H1 (hypothetical) no repairs in the highest state": "H1 hyp.: no repairs in top state",
+             "H1 (hypothetical) no repairs in the highest state: independent, same FOR": "  independent, same FOR",
+             "H2 (hypothetical) H1 + 5x failures in the highest state": "H2 hyp.: H1 + 5x failures in top state",
+             "H2 (hypothetical) H1 + 5x failures in the highest state: independent, same FOR":
+                 "  independent, same FOR"}
+    base = float(p.loc[p["variant"] == "independent", "elcc_pct_KSE"].iloc[0])
+    y = np.arange(len(p))[::-1]
+    vals = (p["elcc_pct_KSE"] - base).to_numpy()
+    ax.barh(y, vals, color=[C2 if "hypothetical" in v else C1 for v in p["variant"]], height=0.6)
+    for yy, v in zip(y, vals):
+        ax.text(max(v, 0) + 0.02, yy, f"{v:+.2f}", va="center", ha="left", fontsize=7.5, color=INK2)
+    ax.set_yticks(y, [names.get(v, v) for v in p["variant"]], fontsize=7.5)
+    ax.set_xlim(min(vals.min() * 1.15, -0.1), 0.25)
+    ax.axvline(0, color=BASE, linewidth=1)
+    ax.set_xlabel(f"wind ELCC minus independence ({base:.1f} %), points")
+    ax.set_title("Polish portfolio, KSE load, pooled rates")
+    ax.grid(axis="y", visible=False)
+    fig.suptitle("Weather-dependent failures and repairs: Kelmarsh, Penmanshiel, Hill of Towie",
+                 x=0.01, ha="left", fontsize=11.5, color=INK, fontweight="semibold")
+    fig.tight_layout()
+    return save(fig, "failure_rates.png")
+
+
 def make_all(results_dir=RESULTS_DIR) -> list[Path]:
     style()
     out = []
     for fn in (transition_matrices, seasonality_and_persistence, variants, elcc_map, elcc_curves, lole_vs_share,
-               sensitivity, structural_fig, weather_models, storage_elcc_fig, storage_lulls_fig, verification_fig):
+               sensitivity, structural_fig, weather_models, storage_elcc_fig, storage_lulls_fig, verification_fig,
+               theory_fig, failures_fig):
         try:
             out.append(fn(results_dir))
         except FileNotFoundError as exc:
